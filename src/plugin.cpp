@@ -274,7 +274,7 @@ const char* Plugin::GetLicense() { return "GPLv3"; }
 const char* Plugin::GetVersion() { return VERSION_STRING; }
 const char* Plugin::GetDate() { return BUILD_TIMESTAMP; }
 const char* Plugin::GetLogTag() { return "GameFixes"; }
-const char* Plugin::GetAuthor() { return reinterpret_cast<const char*>(u8"Slynx (˙·٠● S l y n x ●٠·˙)"); }
+const char* Plugin::GetAuthor() { return reinterpret_cast<const char*>(u8"Slynx (˙·٠● S l y n x ●٠·˙), jvnipers fork"); }
 const char* Plugin::GetDescription() { return "CS2 server fixes, each toggled in game_fixes.ini"; }
 const char* Plugin::GetName() { return "Game Fixes"; }
-const char* Plugin::GetURL() { return "https://slynxdev.cz"; }
+const char* Plugin::GetURL() { return "https://github.com/jvnipers/GameFixes_mm"; }
