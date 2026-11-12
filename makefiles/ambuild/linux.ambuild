@@ -1,13 +1,15 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
 #
-# Linux (GCC / Clang) settings -- AMBuild twin of makefiles/cmake/linux.cmake.
+# Linux (GCC / Clang) settings.
 import os
 
-# The SDK's Linux defines (_LINUX, POSIX, stricmp=strcasecmp, ...) and libraries
-# come from s2sdk-manifests' linux.ambuild, through SdkHelpers.configureCxx.
+# _LINUX, POSIX, GNUC and the SDK's libraries come from hl2sdk-manifests, through SdkHelpers.configureCxx.
 def ConfigureCxx(cxx, options):
   cxx.defines += [
+    'stricmp=strcasecmp',
+    '_stricmp=strcasecmp',
     '_snprintf=snprintf',
+    '_vsnprintf=vsnprintf',
     'HAVE_STDINT_H',
   ]
   cxx.cflags += [

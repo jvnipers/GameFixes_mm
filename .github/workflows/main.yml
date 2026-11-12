@@ -32,7 +32,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           fetch-tags: true
@@ -105,7 +105,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -118,7 +118,7 @@ jobs:
         run: docker compose -f docker/docker-compose.yml up --build --abort-on-container-exit
 
       - name: Upload Linux artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: GameFixes_mm_linux
           path: build/package/cs2
@@ -132,38 +132,14 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
-      - name: Prepare SDK directory
-        shell: powershell
-        run: |
-
-          $SDK = "C:\sdk"
-          $S2SDK = "$SDK\s2sdk"
-          $S2SDK_MANIFESTS = "$SDK\s2sdk-manifests"
-          $MMS = "$SDK\metamod-source"
-
-          if (Test-Path $SDK) { Remove-Item $SDK -Recurse -Force }
-          New-Item -ItemType Directory -Path $SDK | Out-Null
-
-          git clone --recursive --branch cs2 --single-branch https://github.com/Source2Mod/s2sdk $S2SDK
-          git clone --branch master --single-branch https://github.com/Source2Mod/s2sdk-manifests $S2SDK_MANIFESTS
-          git clone --recursive --branch master --single-branch https://github.com/Source2Mod/metamod-source $MMS
-
-          $S2SDK_UNIX = $S2SDK.Replace("\", "/")
-          $S2SDK_MANIFESTS_UNIX = $S2SDK_MANIFESTS.Replace("\", "/")
-          $MMS_UNIX    = $MMS.Replace("\", "/")
-
-          echo "S2SDK=$S2SDK_UNIX"      >> $env:GITHUB_ENV
-          echo "S2SDK_MANIFESTS_DIR=$S2SDK_MANIFESTS_UNIX" >> $env:GITHUB_ENV
-          echo "MMSOURCE_DEV=$MMS_UNIX"  >> $env:GITHUB_ENV
-
       - name: Checkout AMBuild
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
-          repository: SlynxCZ/ambuild
+          repository: alliedmodders/ambuild
           path: ambuild
 
       - name: Install AMBuild
@@ -184,14 +160,12 @@ jobs:
 
           python ../configure.py ^
             --enable-optimize ^
-            --sdks cs2 ^
-            --mms_path=%MMSOURCE_DEV% ^
-            --s2sdk-manifests=%S2SDK_MANIFESTS_DIR%
+            --sdks cs2
 
           ambuild
 
       - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: GameFixes_mm_windows
           path: build/package/cs2
@@ -209,7 +183,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -231,13 +205,13 @@ jobs:
           git push origin "refs/tags/$TAG"
 
       - name: Download Linux artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: GameFixes_mm_linux
           path: ./artifacts/linux
 
       - name: Download Windows artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: GameFixes_mm_windows
           path: ./artifacts/windows

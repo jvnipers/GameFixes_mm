@@ -21,6 +21,8 @@ def ResolveMMSRoot():
   prenormalized_path = None
   if builder.options.mms_path:
     prenormalized_path = builder.options.mms_path
+  elif os.path.isdir(os.path.join(builder.sourcePath, 'metamod-source', 'core')):
+    prenormalized_path = os.path.join(builder.sourcePath, 'metamod-source')
   else:
     prenormalized_path = ResolveEnvPath('MMSOURCE112', 'mmsource-1.12')
     if not prenormalized_path:
@@ -38,22 +40,16 @@ def ResolveMMSRoot():
 
 mms_root = ResolveMMSRoot()
 
-# s2sdk-manifests: what a binary needs from s2sdk (include paths, defines,
-# libraries incl. the Steam API, protoc) -- the same lists the CMake side gets
-# through s2sdk's CMakeLists.txt as s2sdk::s2sdk.
-def ResolveS2SdkManifests():
-  path = builder.options.s2sdk_manifests
-  if not path:
-    path = ResolveEnvPath('S2SDK_MANIFESTS_DIR', 's2sdk-manifests')
-  if not path or not os.path.isfile(os.path.join(path, 'SdkHelpers.ambuild')):
-    raise Exception('Could not find s2sdk-manifests: pass --s2sdk-manifests or set S2SDK_MANIFESTS_DIR')
+def ResolveHL2SdkManifests():
+  path = builder.options.hl2sdk_manifests or os.path.join(mms_root, 'hl2sdk-manifests')
+  if not os.path.isfile(os.path.join(path, 'SdkHelpers.ambuild')):
+    raise Exception('Could not find hl2sdk-manifests: pass --hl2sdk-manifests')
   return os.path.abspath(os.path.normpath(path))
 
-SdkHelpers = builder.Eval(os.path.join(ResolveS2SdkManifests(), 'SdkHelpers.ambuild'))
+SdkHelpers = builder.Eval(os.path.join(ResolveHL2SdkManifests(), 'SdkHelpers.ambuild'), {
+  'Project': 'metamod'
+})
 
-# The build settings, split the same way as the CMake side (makefiles/cmake/):
-# shared.ambuild <-> shared.cmake, linux.ambuild <-> linux.cmake,
-# windows.ambuild <-> windows.cmake, metamod.ambuild <-> metamod.cmake.
 Shared = builder.Import('makefiles/ambuild/shared.ambuild')
 Linux = builder.Import('makefiles/ambuild/linux.ambuild')
 Windows = builder.Import('makefiles/ambuild/windows.ambuild')
@@ -105,10 +101,8 @@ class MMSPluginConfig(object):
       sdk_path = os.path.join(builder.options.hl2sdk_root, dir_name)
       if os.path.exists(sdk_path):
         return sdk_path
-    # The manifest's environment variables (cs2: S2SDK_CS2, S2SDKCS2, S2SDK,
-    # HL2SDK_CS2, HL2SDKCS2): the first of them that is set wins.
-    sdk_path = SdkHelpers.findSdkPathFromEnv(sdk_name)
-    if sdk_path and os.path.isdir(sdk_path):
+    sdk_path = os.path.join(builder.sourcePath, 's2sdk')
+    if sdk_name == 'cs2' and os.path.isdir(sdk_path):
       return sdk_path
     return ResolveEnvPath('HL2SDK{}'.format(sdk_name.upper()), dir_name)
 
@@ -132,8 +126,6 @@ class MMSPluginConfig(object):
       self.configure_cxx(cxx)
 
   def configure_cxx(self, cxx):
-    # makefiles/ambuild/shared.ambuild, then linux.ambuild or windows.ambuild --
-    # the AMBuild twins of makefiles/cmake/shared.cmake, linux.cmake, windows.cmake.
     Shared.ConfigureCxx(cxx, builder.options)
     self.Platform(cxx).ConfigureCxx(cxx, builder.options)
 
@@ -166,4 +158,4 @@ BuildScripts = [
   'makefiles/ambuild/package.ambuild'
 ]
 
-builder.Build(BuildScripts, { 'MMSPlugin': MMSPlugin, 'Metamod': Metamod, 'SdkHelpers': SdkHelpers })
+builder.Build(BuildScripts, { 'MMSPlugin': MMSPlugin, 'Metamod': Metamod })

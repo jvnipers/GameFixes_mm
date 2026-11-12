@@ -2,12 +2,8 @@
 /vs/
 /linuxbuild/
 .ccls-cache/
-.cmake/
-cmake-build-*/
 .kdev4/
 generated/
 output/
 dockerbuild/
 .idea/
-
-configs/addons/metamod/*.vdf

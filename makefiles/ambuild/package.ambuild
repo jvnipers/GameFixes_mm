@@ -56,7 +56,7 @@ class SDKPackage:
 
   def generateVDF(self, cxx):
 
-    # From makefiles/metamod/<name>.vdf.in, the template CMake fills in too.
+    # From makefiles/metamod/<name>.vdf.in.
     Metamod.GenerateVDF(builder, self.metamod_path, cxx)
 
 
@@ -90,11 +90,6 @@ class SDKPackage:
         src = os.path.join(root, f)
 
         rel = os.path.relpath(src, folder_path)
-
-        # CMake writes its copy of the plugin's .vdf here (git-ignored); the
-        # package already gets the one generated above.
-        if os.path.dirname(rel) == os.path.join('addons', 'metamod') and f.endswith('.vdf'):
-          continue
 
         dst = os.path.join(result_path, rel)
 

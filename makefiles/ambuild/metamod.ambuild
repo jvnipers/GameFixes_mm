@@ -1,14 +1,10 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
 #
-# The plugin's metamod .vdf -- AMBuild twin of makefiles/cmake/metamod.cmake.
-#
-# Both build systems fill in the one template, makefiles/metamod/<name>.vdf.in,
-# the way CMake's configure_file() does, so the .vdf in an AMBuild package is
-# byte-identical to the one CMake writes to configs/addons/metamod/.
+# The plugin's metamod .vdf, filled in from makefiles/metamod/<name>.vdf.in
+# the way CMake's configure_file() does.
 import os
 import re
 
-# Keep in step with makefiles/cmake/metamod.cmake.
 VDF_TEMPLATE = 'game_fixes.vdf.in'
 
 # The ${VAR} and @VAR@ forms configure_file() replaces, with its name charset.
@@ -29,7 +25,6 @@ def ConfigureFile(text, variables):
     out += line + '\n'
   return out
 
-# The variables metamod.cmake sets for the template.
 def TemplateVariables(cxx):
   return {
     'PROJECT_VDF_PLATFORM': 'win64' if cxx.target.platform == 'windows' else 'linuxsteamrt64',
@@ -38,7 +33,6 @@ def TemplateVariables(cxx):
 # Writes <metamod_path>/<name>.vdf; called from package.ambuild.
 def GenerateVDF(builder, metamod_path, cxx):
   template = os.path.join(builder.sourcePath, 'makefiles', 'metamod', VDF_TEMPLATE)
-  # Editing the template re-runs the configure step, as it does for CMake.
   builder.AddConfigureFile(template)
 
   with open(template, 'r', encoding='utf-8', newline='') as fp:

@@ -29,7 +29,7 @@ for sdk_target in MMSPlugin.sdk_targets:
     os.path.join(builder.sourcePath, 'src', 'fixes', 'sv_cheats.cpp'),
     os.path.join(builder.sourcePath, 'src', 'fixes', 'team_limit.cpp'),
     os.path.join(builder.sourcePath, 'src', 'fixes', 'voice_flood.cpp'),
-    os.path.join(builder.sourcePath, 'src', 'impl', 'sdk', 'schemasystem_helper.cpp'),
+    os.path.join(builder.sourcePath, 'src', 'sdk', 'schemasystem_helper.cpp'),
   ]
 
   binary.compiler.linkflags += [
@@ -44,9 +44,7 @@ for sdk_target in MMSPlugin.sdk_targets:
     os.path.join(builder.sourcePath, 'vendor', 'dynlibutils', 'include', 'dynlibutils')
   ]
 
-  # server_list_players talks to the Steam game server API.
-  # The SDK's protos, relative to s2sdk -- s2sdk_protobufs() in CMakeBuilder.cmake.
-  SdkHelpers.addProtobufs(builder, binary, sdk_target, [
+  protos = [
     'common/network_connection.proto',
     'common/networkbasetypes.proto',
     'networksystem/networksystem_protomessages.proto',
@@ -68,13 +66,15 @@ for sdk_target in MMSPlugin.sdk_targets:
     'game/shared/clientmessages.proto',
     'game/shared/te.proto',
     'common/valveextensions.proto',
-  ])
-  # The protos import each other by name, also from folders s2sdk-manifests'
-  # protoc doesn't search (s2sdk_protobufs() adds every listed proto's folder).
-  binary.custom[-1].protoc.includes += [
+  ]
+  protoc = builder.tools.Protoc(protoc = sdk_target.protoc,
+                                sources = [os.path.join(sdk['path'], *p.split('/')) for p in protos])
+  # The protos import each other by name, also from folders hl2sdk-manifests doesn't search
+  protoc.protoc.includes += [
     os.path.join(sdk['path'], 'gcsdk'),
     os.path.join(sdk['path'], 'game', 'shared', 'cstrike15'),
   ]
+  binary.custom = [protoc]
 
   nodes = builder.Add(binary)
   MMSPlugin.binaries += [nodes]

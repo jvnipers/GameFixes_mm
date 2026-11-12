@@ -1,6 +1,6 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
 #
-# Settings every platform shares -- AMBuild twin of makefiles/cmake/shared.cmake.
+# Settings every platform shares.
 # The per-platform ones are in linux.ambuild / windows.ambuild.
 import os
 
@@ -26,7 +26,7 @@ def ConfigureBinary(context, binary, sdk, MMSPlugin):
     cxx.defines += ['SE_{}={}'.format(other_sdk['define'], other_sdk['code'])]
 
   if sdk['source2']:
-    # The same list, in the same order, as CMakeLists.txt's.
+    cxx.defines += ['META_IS_SOURCE2']
     binary.sources += [
       os.path.join(sdk['path'], 'public', 'tier0', 'memoverride.cpp'),
       os.path.join(sdk['path'], 'tier0_perproject', 'keyvalues3.cpp'),

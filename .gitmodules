@@ -2,3 +2,10 @@
 	path = vendor/dynlibutils
 	url = https://github.com/SlynxCZ/DynLibUtils.git
 	branch = main
+[submodule "s2sdk"]
+	path = s2sdk
+	url = https://github.com/alliedmodders/s2sdk
+	branch = cs2
+[submodule "metamod-source"]
+	path = metamod-source
+	url = https://github.com/alliedmodders/metamod-source

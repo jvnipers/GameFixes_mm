@@ -85,23 +85,12 @@ Every handler shows up in the engine's profiler as `GameFixes::<fix>::<function>
 
 ## Building
 
-Requires `S2SDK` (or `HL2SDKCS2`) and `MMSOURCE_DEV` in the environment (alliedmodders/s2sdk `cs2` branch, metamod-source; the game protobufs are generated from s2sdk's own `.proto` files).
-
-CMake, for local development (CLion):
+alliedmodders/s2sdk (`cs2` branch) and Metamod:Source are submodules; the game protobufs are generated from s2sdk's own `.proto` files. AMBuild, what CI uses (`docker/` on Linux, MSVC on Windows):
 
 ```
-git clone --recursive https://github.com/SlynxCZ/GameFixes_mm
-cmake -S GameFixes_mm -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-```
-
-`build/addons/` is the complete install tree (binary, `game_fixes.ini`, metamod `.vdf`); copy it into `game/csgo/`.
-
-AMBuild, what CI uses (`docker/` on Linux, MSVC on Windows), same as the other `*_mm` plugins:
-
-```
+git submodule update --init --recursive
 mkdir build && cd build
-python ../configure.py --enable-optimize --sdks cs2 --mms_path=$MMSOURCE_DEV --s2sdk-manifests=/path/to/s2sdk-manifests
+python ../configure.py --enable-optimize --sdks cs2
 ambuild
 ```
 

@@ -12,13 +12,11 @@ RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 RUN apt update && apt install -y clang-18 lld-18 libc++-18-dev libc++abi-18-dev
 RUN ln -sf /usr/bin/clang-18 /usr/bin/clang
 RUN ln -sf /usr/bin/clang++-18 /usr/bin/clang++
-RUN git clone https://github.com/SlynxCZ/ambuild
+RUN git clone https://github.com/alliedmodders/ambuild
 RUN cd ambuild && python setup.py install && cd ..
 
 RUN apt update && apt install -y \
     build-essential \
-    cmake \
-    ninja-build \
     git \
     zlib1g \
     zlib1g-dev \

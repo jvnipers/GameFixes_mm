@@ -1,6 +1,6 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
 #
-# Windows (MSVC) settings -- AMBuild twin of makefiles/cmake/windows.cmake.
+# Windows (MSVC) settings.
 import os
 
 def ConfigureCxx(cxx, options):
@@ -53,7 +53,7 @@ def ConfigureCxx(cxx, options):
   # This needs to be after our optimization flags which could otherwise disable it.
   cxx.cflags += ['/Oy-']
 
-  # WIN32, WIN64, COMPILER_MSVC* come from s2sdk-manifests' windows.ambuild.
+  # WIN32, WIN64, COMPILER_MSVC* come from hl2sdk-manifests, through SdkHelpers.configureCxx.
   cxx.defines += ['_WINDOWS']
 
 # The plugin binary, after SdkHelpers added the SDK's libraries (the Steam API
