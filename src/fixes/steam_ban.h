@@ -58,16 +58,12 @@ public:
     KHook::Function<void>* m_hCheckSteamBan = nullptr;
 
 private:
-    // "whitelist", as Steam32 account ids
     std::unordered_set<uint32> m_whitelist;
 
-    // "clear_after_pass"
     bool m_bClearAfterPass = true;
 
-    // From IGameFixes, as Steam32 account ids
     std::unordered_set<uint32> m_allowed;
 
-    // "hold_seconds", 0 = no hold
     std::chrono::duration<float> m_holdTime{15.0f};
     std::unordered_map<uint32, std::chrono::steady_clock::time_point> m_firstSeen;
 

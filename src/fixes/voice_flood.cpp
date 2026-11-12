@@ -31,7 +31,6 @@
 #include <cstdio>
 #include <limits>
 
-// A message cost is its serialized size plus 4 bytes per packet.
 static constexpr size_t kMaxVoiceDataBytes = 16384;
 static constexpr size_t kMaxMessageBytes = 16384;
 static constexpr uint32_t kMaxPacketsPerMessage = 64;

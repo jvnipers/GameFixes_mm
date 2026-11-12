@@ -49,7 +49,6 @@ inline void* FindPattern(const void* knownAddress, const char* pattern)
 inline void WriteCode(void* addr, const void* pBytes, std::size_t len)
 {
 #ifdef _WIN32
-    // VirtualProtect hands the previous flags back, so the page is restored exactly as it was.
     DWORD oldProtect;
     VirtualProtect(addr, len, PAGE_EXECUTE_READWRITE, &oldProtect);
     std::memcpy(addr, pBytes, len);

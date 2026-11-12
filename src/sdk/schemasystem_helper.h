@@ -42,7 +42,6 @@
 
 namespace schema
 {
-    // -1 (with a warning) when missing.
     int32_t GetOffset(const char* pszClassName, const char* pszFieldName);
 
     template <typename T>
@@ -81,7 +80,6 @@ namespace schema
 
     void* GetMissingFieldStorage();
 
-    // 0 when the class has no __m_pChainEntity.
     int32_t GetChainOffset(const char* pszClassName);
     template <typename T>
     int32_t GetChainOffset() { return GetChainOffset(ClassNameCStr<T>()); }
@@ -91,7 +89,7 @@ namespace schema
     struct NetworkInfo_t
     {
         bool resolved = false;  // false until the entity system exists; resolve again later
-        bool networked = false; // plenty of schema fields never leave the server
+        bool networked = false;
         int32_t offset = -1;
         int32_t chainOffset = 0;
     };
@@ -105,7 +103,6 @@ namespace schema
     void EntityNetworkStateChanged(CEntityInstance* pEntity, int32_t nOffset);
     void ChainNetworkStateChanged(void* pNetworkVarChainer, int32_t nOffset);
 
-    // Through the NetworkVar_<field> wrapper's NetworkStateChanged, found from the object's vtable; no-op when not embedded.
     void EmbeddedNetworkStateChanged(void* pObject, int32_t nOffset);
 
     template <typename Class>

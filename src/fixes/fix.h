@@ -43,10 +43,8 @@ class CFix
 public:
     virtual ~CFix() = default;
 
-    // The fix's game_fixes.ini block and log prefix.
     virtual const char* GetName() const = 0;
 
-    // Only for an enabled block, right before Load().
     virtual void ReadConfig(KeyValues* pConfig) {}
 
     // KHook hooks come down only in their destructor: own them by pointer and delete them in Unload(), which also runs for a fix that never loaded.
@@ -57,7 +55,6 @@ public:
     virtual void OnStartupServer(const GameSessionConfiguration_t& config, const char* pszMapName) {}
     virtual void OnGameFrame(bool simulating) {}
 
-    // After the game registered its own events: the place to AddListener().
     virtual void OnGameEventManagerReady(IGameEventManager2* pManager) {}
 
 protected:

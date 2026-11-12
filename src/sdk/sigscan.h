@@ -30,7 +30,6 @@ namespace sig
         return KHook::LookupSignature(base, size - sigLen + 1, signature);
     }
 
-    // As a pointer to its first slot.
     void* FindVirtualTable(const void* knownAddress, const char* className);
 
     // disp32 at +3 (REX + opcode + ModRM), e.g. 48 8D 0D <disp32>.

@@ -38,7 +38,6 @@ public:
     void Unload() override;
 
 private:
-    // ICvar's callback is a plain function pointer, hence s_pInstance.
     static void OnConVarChanged(ConVarRefAbstract* pConVar, CSplitScreenSlot nSlot, const char* pszNewValue, const char* pszOldValue, ConVarUserInfoSet_t* pUserInfo);
     void OnSvCheatsDisabled();
 

@@ -53,7 +53,6 @@ public:
 private:
     void UpdatePlayers();
 
-    // "update_interval", seconds
     float m_flUpdateInterval = 5.0f;
     Timer* m_pUpdateTimer = nullptr;
 

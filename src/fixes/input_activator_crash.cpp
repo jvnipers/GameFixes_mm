@@ -61,7 +61,6 @@ KHook::Return<bool> CInputActivatorCrashFix::CEntityIdentity_AcceptInput(CEntity
 {
     GF_VPROF("GameFixes::input_activator_crash::AcceptInput");
 
-    // A null activator (player gone) crashes the game's TestActivator.
     if (!V_strnicmp(pThis->GetClassname(), "filter_", 7) && !V_strcasecmp(pInputName->String(), "TestActivator") && !pActivator)
         return { KHook::Action::Supersede, true };
 

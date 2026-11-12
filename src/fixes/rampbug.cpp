@@ -243,7 +243,6 @@ void CRampbugFix::RegisterLanding(PlayerState& state, CBasePlayerPawn* pPawn, co
     state.vecLandingVelocity = vecVelocity;
 }
 
-// The game clips the landing velocity against the slope and loses speed.
 void CRampbugFix::ApplySlopeFix(PlayerState& state, CBasePlayerPawn* pPawn)
 {
     if (!state.bProcessingMovement || !state.pMoveData)
@@ -289,11 +288,9 @@ bool CRampbugFix::IsValidMovementTrace(trace_t& trace, const PlayerBounds_t& bou
     if (trace.m_bStartInSolid)
         return false;
 
-    // Hit something, but no plane to show for it.
     if (trace.m_flFraction < 1.0f && fabsf(trace.m_vHitNormal.x) < FLT_EPSILON && fabsf(trace.m_vHitNormal.y) < FLT_EPSILON && fabsf(trace.m_vHitNormal.z) < FLT_EPSILON)
         return false;
 
-    // A deformed plane.
     if (fabsf(trace.m_vHitNormal.x) > 1.0f || fabsf(trace.m_vHitNormal.y) > 1.0f || fabsf(trace.m_vHitNormal.z) > 1.0f)
         return false;
 
@@ -319,7 +316,6 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_ProcessMovement(CCSP
     if (!pState)
         return { KHook::Action::Ignore };
 
-    // Moved by game code since the last pass (a teleport)
     const int nGameCodeMoves = pThis->m_nGameCodeHasMovedPlayerAfterCommand();
     if (nGameCodeMoves != pState->nGameCodeMoves)
     {
@@ -367,7 +363,6 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_ProcessMovementPost(
     return { KHook::Action::Ignore };
 }
 
-// The pass's walk, redone with every trace nudged off the last valid plane.
 KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMove(CCSPlayer_MovementServices* pThis, CMoveData* pMove, Vector* pFirstDest, trace_t* pFirstTrace, bool* pIsSurfing)
 {
     GF_VPROF("GameFixes::rampbug::TryPlayerMove");
@@ -432,7 +427,6 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMove(CCSPla
                 && (!IsValidMovementTrace(pm, bounds, &filter) || pm.m_vHitNormal.Dot(state.vecLastValidPlane) < RAMP_BUG_THRESHOLD
                     || (potentiallyStuck && pm.m_flFraction == 0.0f)))
             {
-                // A plane that would change the velocity a lot: make sure it is a real one.
                 Vector offsetDirection;
                 const float offsets[] = {0.0f, -1.0f, 1.0f};
                 bool success = false;
@@ -585,7 +579,6 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMovePost(CC
     if (!pState)
         return { KHook::Action::Ignore };
 
-    // Our walk ending in a standstill is no result to put back
     if (!m_bOverrideTryPlayerMove || !pState->bOverrideTPM || pState->vecTPMVelocity == vec3_invalid || pState->vecTPMVelocity.LengthSqr() < 1.0f)
         return { KHook::Action::Ignore };
 
@@ -604,7 +597,6 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMovePost(CC
     return { KHook::Action::Ignore };
 }
 
-// Fast down a ramp, the ground check can find a standable plane the player is not on.
 KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_CategorizePosition(CCSPlayer_MovementServices* pThis, CMoveData* pMove, bool bStayOnGround)
 {
     GF_VPROF("GameFixes::rampbug::CategorizePosition");

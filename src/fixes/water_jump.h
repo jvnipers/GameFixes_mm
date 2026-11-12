@@ -52,7 +52,6 @@ public:
     KHook::Member<CCSPlayer_MovementServices, void, CMoveData*, bool>* m_hCategorizePosition = nullptr;
 
 private:
-    // -1 for anything that is not a player.
     static int GetSlot(CCSPlayer_MovementServices* pServices);
 
     bool m_bSkipNextCategorize[64] = {};

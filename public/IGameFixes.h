@@ -33,11 +33,9 @@
 
 #define GAMEFIXES_INTERFACE_VERSION "IGameFixes001"
 
-// From another plugin: g_SMAPI->MetaFactory(GAMEFIXES_INTERFACE_VERSION, nullptr, nullptr). A call to a fix that is off returns false.
 class IGameFixes
 {
 public:
-	// An account the engine wants kicked is held for "hold_seconds" first, so it can still be allowed right after it connects.
 	virtual bool SteamBanAllowAccount(uint64_t steamId64) = 0;
 	virtual bool SteamBanDisallowAccount(uint64_t steamId64) = 0;
 };

@@ -73,7 +73,7 @@ public:
     CUtlVector<SubtickMove> m_SubtickMoves;
     CUtlVector<SubtickMove> m_AttackSubtickMoves;
     bool m_bHasSubtickInputs;
-    float unknown;  // 1.0 from SetupMove on, never changes
+    float unknown;
     CUtlVector<touchlist_t> m_TouchList;
     Vector m_collisionNormal;
     Vector m_groundNormal;
@@ -91,7 +91,7 @@ public:
     QAngle m_vecOldAngles;
     MovementVector2D m_vecWalkWishVel;
     Vector m_vecContinousAcceleration;  // u/s^2
-    Vector m_vecFrameVelocityDelta;     // u/s, the half of air acceleration that skips the per-second path
+    Vector m_vecFrameVelocityDelta;     // u/s
     float m_flMaxSpeed;
 };
 

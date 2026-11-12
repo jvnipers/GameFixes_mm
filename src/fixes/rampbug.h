@@ -71,7 +71,7 @@ private:
         CMoveData* pMoveData = nullptr;       // the pass in flight, null outside ProcessMovement
         bool bProcessingMovement = false;
         bool bPreviousOnGround = false;
-        int nGameCodeMoves = 0;               // m_nGameCodeHasMovedPlayerAfterCommand last seen
+        int nGameCodeMoves = 0;
         bool bDidTPM = false;
         bool bOverrideTPM = false;
         Vector vecTPMVelocity;                // vec3_invalid until TryPlayerMove ran
@@ -82,14 +82,11 @@ private:
         Vector vecLandingVelocity;
 
         void Reset();
-        // Keeps the pass in flight.
         void ForgetSurface();
     };
 
-    // "tryplayermove_override"
     bool m_bOverrideTryPlayerMove = false;
 
-    // Null for anything that is not a player.
     PlayerState* GetState(CCSPlayer_MovementServices* pServices, CBasePlayerPawn** ppPawn);
 
     static void GetOrigin(const PlayerState& state, CBasePlayerPawn* pPawn, Vector& vecOut);
@@ -102,7 +99,6 @@ private:
     void ApplySlopeFix(PlayerState& state, CBasePlayerPawn* pPawn);
     bool IsValidMovementTrace(trace_t& trace, const PlayerBounds_t& bounds, CTraceFilter* pFilter);
 
-    // Through CNavPhysicsInterface::Nav_TraceShape, as cs2kz does: the engine's own is gone.
     void TracePlayerBBox(const Vector& start, const Vector& end, const PlayerBounds_t& bounds, CTraceFilter* pFilter, trace_t& pm);
     void* m_pNavPhysicsVTable = nullptr;
 

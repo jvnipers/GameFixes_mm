@@ -70,7 +70,6 @@ bool CSteamBanFix::Load(const FixModules& modules, char* error, size_t maxlen)
 {
     // https://github.com/Source2ZE/CS2Fixes/commit/c82d21ae36588520391b301ed02bfb851dff18e1
 
-    // lea reg, [rip + CCSGameRules::sm_mapGcBanInformation]
     void* pMapRef = FindPattern(modules.server, WIN_LINUX("48 8D 0D ? ? ? ? 45 33 C0 4C 89 74 24", "48 8D 35 ? ? ? ? 89 C2 48 63 46"));
     if (!pMapRef)
     {
@@ -151,7 +150,6 @@ KHook::Return<void> CSteamBanFix::GameSystem_Think_CheckSteamBan()
     if (m_holdTime.count() <= 0.0f)
         return { KHook::Action::Ignore };
 
-    // Hold what would be kicked while it's new, in case a plugin allows it in time.
     const auto now = std::chrono::steady_clock::now();
     bool bHold = false;
     std::unordered_set<uint32> inMap;

@@ -75,7 +75,7 @@ inline constexpr const char* k_pszNetGroupNames[ SG_TOTAL ] =
     "Game Engine", "Hltv Replay", "Decals"
 };
 
-// s2sdk's CNetMessagePB takes one template parameter. No members or virtuals here, so the layout stays CNetMessagePB<T>'s.
+// No members or virtuals, so the layout stays CNetMessagePB<T>'s.
 template< int32_t ID, typename PROTO_TYPE, SignonGroup_t SIGNON = SG_GENERIC,
           NetChannelBufType_t BUF_TYPE = BUF_RELIABLE, bool IS_FOR_SERVER = false >
 class CNetMessagePBTyped : public CNetMessagePB< PROTO_TYPE >

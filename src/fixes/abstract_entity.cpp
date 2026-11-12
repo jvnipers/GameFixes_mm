@@ -39,11 +39,10 @@ namespace
 {
     bool IsConstructible(const CSchemaClassInfo* pInfo)
     {
-        // The binding the game reads the flags from is the primary one.
         if (pInfo && pInfo->m_pPrimaryBinding)
             pInfo = pInfo->m_pPrimaryBinding;
         if (!pInfo)
-            return true; // nothing to go by: leave it to the game
+            return true;
 
         constexpr uint32 kMask = SCHEMA_CF1_IS_ABSTRACT | SCHEMA_CF1_CONSTRUCT_ALLOWED | SCHEMA_CF1_CONSTRUCT_DISALLOWED;
         return (pInfo->m_nClassFlags1 & kMask) == SCHEMA_CF1_CONSTRUCT_ALLOWED;
@@ -57,7 +56,6 @@ CAbstractEntityFix::CAbstractEntityFix() :
 
 bool CAbstractEntityFix::Load(const FixModules& modules, char* error, size_t maxlen)
 {
-    // Logs "CEntitySystem::PrecacheEntity: Classname missing from entity!"
     void* pCreate = FindPattern(modules.server, WIN_LINUX("40 56 57 41 56 41 57 48 81 EC 98 00 00 00", "55 48 8D 05 ? ? ? ? 48 89 E5 41 57 4C 8D 7D ? 41 56 49 89 F6"));
     if (!pCreate)
     {

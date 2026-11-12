@@ -48,7 +48,6 @@ static SchemaClassInfoData_t* FindServerClass(const char* pszClassName)
     return pType ? pType->FindDeclaredClass(pszClassName).Get() : nullptr;
 }
 
-// Walks up the base classes; single inheritance keeps the offsets valid.
 static SchemaClassFieldData_t* FindField(SchemaClassInfoData_t* pClassInfo, const char* pszFieldName,
                                          SchemaClassInfoData_t** ppDeclaring = nullptr)
 {
@@ -68,7 +67,6 @@ static SchemaClassFieldData_t* FindField(SchemaClassInfoData_t* pClassInfo, cons
     return nullptr;
 }
 
-// Null until the entity system exists.
 static CNetworkSerializerCodeGenDatabase* GetSerializerDatabase()
 {
     if (!GameEntitySystem())

@@ -75,7 +75,6 @@ void CDemoRecordFix::OnStartupServer(const GameSessionConfiguration_t& config, c
     if (!IsTvEnabled())
         return;
 
-    // The engine reads max_clients after this Pre hook, so GOTV gets a slot of its own.
     Log("GOTV is enabled, expanding the session's maxplayers (%u -> %u)", config.max_clients(), config.max_clients() + 1);
     const_cast<GameSessionConfiguration_t&>(config).set_max_clients(config.max_clients() + 1);
 }

@@ -18,7 +18,6 @@
 
 namespace
 {
-    // Pass the previous hit as from to walk every match.
     const uint8_t* FindBytes(const uint8_t* base, size_t size, const void* needle, size_t needleLen, const uint8_t* from)
     {
         if (!base || needleLen == 0 || size < needleLen)

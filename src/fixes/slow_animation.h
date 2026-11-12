@@ -48,7 +48,6 @@ private:
     void OnReloadTimer();
     int CountHumanPlayers() const;
 
-    // "reload_interval", seconds
     float m_flReloadInterval = 1800.0f;
 
     std::unique_ptr<CConVarRef<float>> m_timelimit;

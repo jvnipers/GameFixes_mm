@@ -42,7 +42,6 @@ void CSlowAnimationFix::ReadConfig(KeyValues* pConfig)
 {
     m_flReloadInterval = pConfig->GetFloat("reload_interval", 1800.0f);
 
-    // Anything shorter would just keep flipping the map around.
     if (m_flReloadInterval < 60.0f)
         m_flReloadInterval = 60.0f;
 }

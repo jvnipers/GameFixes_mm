@@ -59,7 +59,6 @@ Plugin g_Plugin;
 PLUGIN_EXPOSE(Plugin, g_Plugin);
 
 Plugin::Plugin() :
-    // StartupServer Pre: demo_record edits the session's maxplayers before the engine reads it.
     KHOOK_NEW(m_hGameFrame, &ISource2Server::GameFrame, this, nullptr, &Plugin::CSource2Server_GameFrame),
     KHOOK_NEW(m_hStartupServer, &INetworkServerService::StartupServer, this, &Plugin::INetworkServerService_StartupServer, nullptr),
     KHOOK_NEW(m_hLoadEventsFromFile, &IGameEventManager2::LoadEventsFromFile, this, nullptr, &Plugin::CGameEventManager_LoadEventsFromFile)
