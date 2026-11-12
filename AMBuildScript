@@ -1,161 +1,125 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
-import os, sys
+import os
 
-def ResolveEnvPath(env, folder):
-  if env in os.environ:
-    path = os.environ[env]
-    if os.path.isdir(path):
-      return path
+mms_root = os.path.abspath(builder.options.mms_path or os.path.join(builder.sourcePath, 'metamod-source'))
+manifests = builder.options.hl2sdk_manifests or os.path.join(mms_root, 'hl2sdk-manifests')
+SdkHelpers = builder.Eval(os.path.join(manifests, 'SdkHelpers.ambuild'), {'Project': 'metamod'})
+
+def FindSdkPath(sdk_name):
+  if builder.options.hl2sdk_root:
+    return os.path.join(builder.options.hl2sdk_root, 'hl2sdk-' + sdk_name)
+  return os.path.join(builder.sourcePath, 's2sdk')
+
+cxx = builder.DetectCxx(target_arch='x86_64')
+
+if builder.options.opt == '1':
+  cxx.defines += ['NDEBUG']
+if builder.options.debug == '1':
+  cxx.defines += ['DEBUG', '_DEBUG']
+
+if cxx.target.platform == 'linux':
+  cxx.defines += [
+    'stricmp=strcasecmp',
+    '_stricmp=strcasecmp',
+    '_snprintf=snprintf',
+    '_vsnprintf=vsnprintf',
+    'HAVE_STDINT_H',
+    '_FILE_OFFSET_BITS=64',
+  ]
+  cxx.cflags += [
+    '-pipe',
+    '-fno-strict-aliasing',
+    '-Wall',
+    '-Werror',
+    '-Wno-uninitialized',
+    '-Wno-unused',
+    '-Wno-switch',
+    '-Wno-parentheses',
+    '-Wno-mismatched-tags',
+    '-Wno-deprecated-anon-enum-enum-conversion',
+    '-Wno-ordered-compare-function-pointers',
+    '-Wno-pragma-once-outside-header',
+    '-Wno-ambiguous-reversed-operator',
+    '-Wno-invalid-offsetof',
+    '-msse',
+    '-fPIC',
+    '-fvisibility=hidden',
+  ]
+  cxx.cxxflags += [
+    '-std=c++20',
+    '-fvisibility-inlines-hidden',
+    '-frtti',
+    '-fno-threadsafe-statics',
+    '-Wno-non-virtual-dtor',
+    '-Wno-overloaded-virtual',
+    '-Wno-register',
+    '-Wno-delete-non-virtual-dtor',
+  ]
+  if cxx.family == 'gcc':
+    cxx.cflags += ['-mfpmath=sse']
+    cxx.linkflags += ['-static-libgcc']
+  elif cxx.family == 'clang':
+    cxx.cflags += ['-Wno-implicit-int-float-conversion', '-Wno-tautological-overlap-compare']
+    cxx.cxxflags += [
+      '-Wno-implicit-exception-spec-mismatch',
+      '-Wno-expansion-to-defined',
+      '-Wno-inconsistent-missing-override',
+      '-Wno-deprecated-register',
+    ]
+    cxx.linkflags += ['-lgcc_eh']
+  cxx.linkflags += ['-static-libstdc++']
+  if builder.options.opt == '1':
+    cxx.cflags += ['-O3']
+  if builder.options.debug == '1':
+    cxx.cflags += ['-g3']
+  # After the optimization flags, which could otherwise turn it back off.
+  cxx.cflags += ['-fno-omit-frame-pointer']
+elif cxx.target.platform == 'windows':
+  if builder.options.debug == '1':
+    cxx.cflags += ['/MTd']
+    cxx.linkflags += ['/NODEFAULTLIB:libcmt']
   else:
-    head = os.getcwd()
-    oldhead = None
-    while head != None and head != oldhead:
-      path = os.path.join(head, folder)
-      if os.path.isdir(path):
-        return path
-      oldhead = head
-      head, tail = os.path.split(head)
-  return None
+    cxx.cflags += ['/MT']
+  cxx.defines += [
+    '_CRT_SECURE_NO_DEPRECATE',
+    '_CRT_SECURE_NO_WARNINGS',
+    '_CRT_NONSTDC_NO_DEPRECATE',
+    '_WINDOWS',
+  ]
+  cxx.cflags += ['/W3', '/Zi', '/EHsc', '/std:c++20', '/bigobj', '/utf-8']
+  cxx.cxxflags += ['/TP']
+  cxx.linkflags += [
+    '/SUBSYSTEM:WINDOWS',
+    'kernel32.lib',
+    'user32.lib',
+    'gdi32.lib',
+    'winspool.lib',
+    'comdlg32.lib',
+    'advapi32.lib',
+    'shell32.lib',
+    'ole32.lib',
+    'oleaut32.lib',
+    'uuid.lib',
+    'odbc32.lib',
+    'odbccp32.lib',
+  ]
+  if builder.options.opt == '1':
+    cxx.cflags += ['/Ox', '/Zo']
+    cxx.linkflags += ['/OPT:ICF', '/OPT:REF']
+  if builder.options.debug == '1':
+    cxx.cflags += ['/Od', '/RTC1']
+  # After the optimization flags, which could otherwise turn it back off.
+  cxx.cflags += ['/Oy-']
+else:
+  raise Exception('Unsupported target platform: {}'.format(cxx.target.platform))
 
-def ResolveMMSRoot():
-  prenormalized_path = None
-  if builder.options.mms_path:
-    prenormalized_path = builder.options.mms_path
-  elif os.path.isdir(os.path.join(builder.sourcePath, 'metamod-source', 'core')):
-    prenormalized_path = os.path.join(builder.sourcePath, 'metamod-source')
-  else:
-    prenormalized_path = ResolveEnvPath('MMSOURCE112', 'mmsource-1.12')
-    if not prenormalized_path:
-      prenormalized_path = ResolveEnvPath('MMSOURCE111', 'mmsource-1.11')
-    if not prenormalized_path:
-      prenormalized_path = ResolveEnvPath('MMSOURCE110', 'mmsource-1.10')
-    if not prenormalized_path:
-      prenormalized_path = ResolveEnvPath('MMSOURCE_DEV', 'metamod-source')
-    if not prenormalized_path:
-      prenormalized_path = ResolveEnvPath('MMSOURCE_DEV', 'mmsource-central')
-  if not prenormalized_path or not os.path.isdir(prenormalized_path):
-    raise Exception('Could not find a source copy of Metamod:Source')
-  
-  return os.path.abspath(os.path.normpath(prenormalized_path))
+SdkHelpers.find_sdk_path = FindSdkPath
+SdkHelpers.findSdks(builder, [cxx], ['cs2'])
 
-mms_root = ResolveMMSRoot()
-
-def ResolveHL2SdkManifests():
-  path = builder.options.hl2sdk_manifests or os.path.join(mms_root, 'hl2sdk-manifests')
-  if not os.path.isfile(os.path.join(path, 'SdkHelpers.ambuild')):
-    raise Exception('Could not find hl2sdk-manifests: pass --hl2sdk-manifests')
-  return os.path.abspath(os.path.normpath(path))
-
-SdkHelpers = builder.Eval(os.path.join(ResolveHL2SdkManifests(), 'SdkHelpers.ambuild'), {
-  'Project': 'metamod'
+plugin = builder.Build('AMBuilder', {
+  'SdkHelpers': SdkHelpers,
+  'sdk_target': SdkHelpers.sdk_targets[0],
+  'mms_root': mms_root,
+  'dynlibutils': builder.Build('vendor/dynlibutils/AMBuildScript', {}),
 })
-
-Shared = builder.Import('makefiles/ambuild/shared.ambuild')
-Linux = builder.Import('makefiles/ambuild/linux.ambuild')
-Windows = builder.Import('makefiles/ambuild/windows.ambuild')
-Metamod = builder.Import('makefiles/ambuild/metamod.ambuild')
-
-class MMSPluginConfig(object):
-  def __init__(self):
-    self.sdk_manifests = []
-    self.sdks = {}
-    self.sdk_targets = []
-    self.binaries = []
-    self.mms_root = mms_root
-    self.all_targets = []
-    self.target_archs = set()
-
-    if builder.options.plugin_name is not None:
-      self.plugin_name = builder.options.plugin_name
-    else:
-      self.plugin_name = 'game_fixes'
-
-    if builder.options.plugin_alias is not None:
-      self.plugin_alias = builder.options.plugin_alias
-    else:
-      self.plugin_alias = 'game_fixes'
-
-    if builder.options.targets:
-      target_archs = builder.options.targets.split(',')
-    else:
-      target_archs = ['x86', 'x86_64']
-
-    for arch in target_archs:
-        try:
-            cxx = builder.DetectCxx(target_arch = arch)
-            self.target_archs.add(cxx.target.arch)
-        except Exception as e:
-            # Error if archs were manually overridden.
-            if builder.options.targets:
-                raise
-            print('Skipping target {}: {}'.format(arch, e))
-            continue
-        self.all_targets.append(cxx)
-
-    if not self.all_targets:
-        raise Exception('No suitable C/C++ compiler was found.')
-
-  def findSdkPath(self, sdk_name):
-    dir_name = 'hl2sdk-{}'.format(sdk_name)
-    if builder.options.hl2sdk_root:
-      sdk_path = os.path.join(builder.options.hl2sdk_root, dir_name)
-      if os.path.exists(sdk_path):
-        return sdk_path
-    sdk_path = os.path.join(builder.sourcePath, 's2sdk')
-    if sdk_name == 'cs2' and os.path.isdir(sdk_path):
-      return sdk_path
-    return ResolveEnvPath('HL2SDK{}'.format(sdk_name.upper()), dir_name)
-
-  def detectSDKs(self):
-    sdk_list = [s for s in builder.options.sdks.split(',') if s]
-    SdkHelpers.find_sdk_path = self.findSdkPath
-    SdkHelpers.findSdks(builder, self.all_targets, sdk_list)
-
-    self.sdks = SdkHelpers.sdks
-    self.sdk_manifests = SdkHelpers.sdk_manifests
-    self.sdk_targets = SdkHelpers.sdk_targets
-
-    if len(self.sdks) > 1:
-      raise Exception('Only one sdk at a time is supported, for multi-sdk approach use loader based solution.')
-
-  def configure(self):
-    for cxx in self.all_targets:
-      if cxx.target.arch not in ['x86', 'x86_64']:
-        raise Exception('Unknown target architecture: {0}'.format(arch))
-
-      self.configure_cxx(cxx)
-
-  def configure_cxx(self, cxx):
-    Shared.ConfigureCxx(cxx, builder.options)
-    self.Platform(cxx).ConfigureCxx(cxx, builder.options)
-
-  def Platform(self, cxx):
-    if cxx.target.platform == 'linux':
-      return Linux
-    if cxx.target.platform == 'windows':
-      return Windows
-    raise Exception('Unsupported target platform: {0}'.format(cxx.target.platform))
-
-  def Library(self, cxx, name):
-    binary = cxx.Library(name)
-    return binary
-  
-  def HL2Library(self, context, compiler, name, sdk):
-    binary = self.Library(compiler, name)
-    Shared.ConfigureBinary(context, binary, sdk, self)
-    SdkHelpers.configureCxx(context, binary, sdk)
-    self.Platform(binary.compiler).ConfigureBinary(context, binary, sdk, self)
-    return binary
-
-MMSPlugin = MMSPluginConfig()
-MMSPlugin.detectSDKs()
-MMSPlugin.configure()
-
-MMSPlugin.dynlibutils_lib = builder.Build('vendor/dynlibutils/AMBuildScript', {})
-
-BuildScripts = [
-  'makefiles/ambuild/AMBuilder',
-  'makefiles/ambuild/package.ambuild'
-]
-
-builder.Build(BuildScripts, { 'MMSPlugin': MMSPlugin, 'Metamod': Metamod })
+builder.Build('PackageScript', {'plugin': plugin, 'platform': cxx.target.platform})

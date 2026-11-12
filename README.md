@@ -33,22 +33,22 @@ A fix that fails to find what it needs (a signature, a vtable) is logged and lef
 
 `addons/game_fixes/game_fixes.ini` -- one block per fix, `"enable" "1"` turns it on, a missing block counts as off. Extra options live in the same block:
 
-```
+```jsonc
 "slow_animation"
 {
-	"enable"			"1"
-	"reload_interval"	"1800"
+    "enable"          "1"
+    "reload_interval" "1800"
 }
 
 "steam_ban"
 {
-	"enable"	"1"
-	"clear_after_pass"	"1"
-	"hold_seconds"	"15"
-	"whitelist"
-	{
-		"Slynx"	"76561198000000000"
-	}
+    "enable"           "1"
+    "clear_after_pass" "1"
+    "hold_seconds"     "15"
+    "whitelist"
+    {
+        "Slynx" "76561198000000000"
+    }
 }
 ```
 
@@ -66,7 +66,7 @@ A call to a fix that is off does nothing and returns false.
 
 ## Layout
 
-```
+```txt
 public/
   IGameFixes.h      what other plugins can call
 src/
@@ -85,12 +85,12 @@ Every handler shows up in the engine's profiler as `GameFixes::<fix>::<function>
 
 ## Building
 
-alliedmodders/s2sdk (`cs2` branch) and Metamod:Source are submodules; the game protobufs are generated from s2sdk's own `.proto` files. AMBuild, what CI uses (`docker/` on Linux, MSVC on Windows):
+alliedmodders/s2sdk (`cs2` branch) and Metamod:Source are submodules; the game protobufs are generated from s2sdk's own `.proto` files. AMBuild, what CI uses (the `ghcr.io/femboykz/build-containers` images on Linux, MSVC on Windows):
 
-```
+```bash
 git submodule update --init --recursive
 mkdir build && cd build
-python ../configure.py --enable-optimize --sdks cs2
+python ../configure.py --enable-optimize
 ambuild
 ```
 

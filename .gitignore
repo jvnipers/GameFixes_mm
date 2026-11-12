@@ -5,5 +5,4 @@
 .kdev4/
 generated/
 output/
-dockerbuild/
 .idea/
