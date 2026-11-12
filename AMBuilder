@@ -2,96 +2,90 @@
 import os
 import subprocess
 
+
 def Git(*args):
-  try:
-    return subprocess.run(['git', *args], cwd=builder.sourcePath, capture_output=True,
-                          text=True, check=True).stdout.strip()
-  except (OSError, subprocess.CalledProcessError):
-    return None
+    try:
+        return subprocess.run(
+            ["git", *args],
+            cwd=builder.sourcePath,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
 
 sdk = sdk_target.sdk
-binary = sdk_target.cxx.Library('game_fixes')
+binary = sdk_target.cxx.Library("game_fixes")
 cxx = binary.compiler
 
 binary.sources += [
-  'src/plugin.cpp',
-  'src/scheduler.cpp',
-  'src/fixes/fix.cpp',
-  'src/fixes/abstract_entity.cpp',
-  'src/fixes/beam_crash.cpp',
-  'src/fixes/demo_record.cpp',
-  'src/fixes/hammer_id.cpp',
-  'src/fixes/input_activator_crash.cpp',
-  'src/fixes/rampbug.cpp',
-  'src/fixes/water_jump.cpp',
-  'src/fixes/server_list_players.cpp',
-  'src/fixes/slow_animation.cpp',
-  'src/fixes/steam_ban.cpp',
-  'src/fixes/sv_cheats.cpp',
-  'src/fixes/team_limit.cpp',
-  'src/fixes/voice_flood.cpp',
-  'src/sdk/schemasystem_helper.cpp',
-  'src/sdk/sigscan.cpp',
-  os.path.join(sdk['path'], 'public', 'tier0', 'memoverride.cpp'),
-  os.path.join(sdk['path'], 'tier0_perproject', 'keyvalues3.cpp'),
-  os.path.join(sdk['path'], 'tier0_perproject', 'convar.cpp'),
-  os.path.join(sdk['path'], 'entity2', 'entityidentity.cpp'),
-  os.path.join(sdk['path'], 'entity2', 'entitysystem.cpp'),
-  os.path.join(sdk['path'], 'entity2', 'entitykeyvalues.cpp'),
+    "src/plugin.cpp",
+    "src/scheduler.cpp",
+    "src/fixes/fix.cpp",
+    "src/fixes/abstract_entity.cpp",
+    "src/fixes/beam_crash.cpp",
+    "src/fixes/demo_record.cpp",
+    "src/fixes/hammer_id.cpp",
+    "src/fixes/input_activator_crash.cpp",
+    "src/fixes/rampbug.cpp",
+    "src/fixes/water_jump.cpp",
+    "src/fixes/server_list_players.cpp",
+    "src/fixes/slow_animation.cpp",
+    "src/fixes/steam_ban.cpp",
+    "src/fixes/sv_cheats.cpp",
+    "src/fixes/team_limit.cpp",
+    "src/fixes/voice_flood.cpp",
+    "src/sdk/schemasystem_helper.cpp",
+    "src/sdk/sigscan.cpp",
+    os.path.join(sdk["path"], "public", "tier0", "memoverride.cpp"),
+    os.path.join(sdk["path"], "tier0_perproject", "keyvalues3.cpp"),
+    os.path.join(sdk["path"], "tier0_perproject", "convar.cpp"),
+    os.path.join(sdk["path"], "entity2", "entityidentity.cpp"),
+    os.path.join(sdk["path"], "entity2", "entitysystem.cpp"),
+    os.path.join(sdk["path"], "entity2", "entitykeyvalues.cpp"),
 ]
 
 cxx.cxxincludes += [
-  os.path.join(mms_root, 'core'),
-  os.path.join(mms_root, 'third_party', 'khook', 'include'),
+    os.path.join(mms_root, "core"),
+    os.path.join(mms_root, "third_party", "khook", "include"),
 ]
 
 cxx.defines += [
-  'META_IS_SOURCE2',
-  'GITHUB_SHA="{}"'.format(Git('rev-parse', '--short', 'HEAD') or 'Local'),
-  'SEMVER="{}"'.format(Git('describe', '--tags', '--exact-match') or 'Local'),
+    "META_IS_SOURCE2",
+    'GITHUB_SHA="{}"'.format(Git("rev-parse", "--short", "HEAD") or "Local"),
+    'SEMVER="{}"'.format(Git("describe", "--tags", "--exact-match") or "Local"),
 ]
-cxx.defines += ['SE_{}={}'.format(other['define'], other['code']) for other in SdkHelpers.sdk_manifests]
+cxx.defines += [
+    "SE_{}={}".format(other["define"], other["code"])
+    for other in SdkHelpers.sdk_manifests
+]
 
 SdkHelpers.configureCxx(builder, binary, sdk)
 
-if cxx.target.platform == 'linux':
-  cxx.linkflags += ['-Wl,--version-script=' + os.path.join(builder.sourcePath, 'ExportMap')]
+if cxx.target.platform == "linux":
+    cxx.linkflags += [
+        "-Wl,--version-script=" + os.path.join(builder.sourcePath, "ExportMap")
+    ]
 
 cxx.cxxincludes += [
-  os.path.join(builder.sourcePath, 'public'),
-  os.path.join(builder.sourcePath, 'src'),
+    os.path.join(builder.sourcePath, "public"),
+    os.path.join(builder.sourcePath, "src"),
 ]
 
 protos = [
-  'common/network_connection.proto',
-  'common/networkbasetypes.proto',
-  'networksystem/networksystem_protomessages.proto',
-  'game/shared/cs/cs_gameevents.proto',
-  'game/shared/cs/cs_usercmd.proto',
-  'game/shared/base_gcmessages.proto',
-  'game/shared/econ/econ_gcmessages.proto',
-  'common/engine_gcmessages.proto',
-  'gcsdk/gcsdk_gcmessages.proto',
-  'gcsdk/gcsystemmsgs.proto',
-  'game/shared/cstrike15/cstrike15_gcmessages.proto',
-  'game/shared/cstrike15/cstrike15_usermessages.proto',
-  'common/source2_steam_stats.proto',
-  'common/netmessages.proto',
-  'gcsdk/steammessages.proto',
-  'game/shared/usercmd.proto',
-  'game/shared/usermessages.proto',
-  'game/shared/gameevents.proto',
-  'game/shared/clientmessages.proto',
-  'game/shared/te.proto',
-  'common/valveextensions.proto',
+    "network_connection",
+    "networkbasetypes",
+    "netmessages",
+    "source2_steam_stats",
+    "valveextensions",
 ]
-protoc = builder.tools.Protoc(protoc = sdk_target.protoc,
-                              sources = [os.path.join(sdk['path'], *p.split('/')) for p in protos])
-# The protos import each other by name, also from folders hl2sdk-manifests doesn't search
-protoc.protoc.includes += [
-  os.path.join(sdk['path'], 'gcsdk'),
-  os.path.join(sdk['path'], 'game', 'shared', 'cstrike15'),
+binary.custom = [
+    builder.tools.Protoc(
+        protoc=sdk_target.protoc,
+        sources=[os.path.join(sdk["path"], "common", p + ".proto") for p in protos],
+    )
 ]
-binary.custom = [protoc]
 
 rvalue = builder.Add(binary)

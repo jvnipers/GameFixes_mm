@@ -29,7 +29,6 @@
 
 #include <algorithm>
 #include <cstdio>
-#include <limits>
 
 static constexpr size_t kMaxVoiceDataBytes = 16384;
 static constexpr size_t kMaxMessageBytes = 16384;

@@ -32,7 +32,6 @@
 // className must be the schema class that declares the field. A missing class or field is reported once and reads/writes scratch memory.
 
 #include <entity2/entityinstance.h>
-#include <networksystem/networkvar.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -103,8 +102,6 @@ namespace schema
     void EntityNetworkStateChanged(CEntityInstance* pEntity, int32_t nOffset);
     void ChainNetworkStateChanged(void* pNetworkVarChainer, int32_t nOffset);
 
-    void EmbeddedNetworkStateChanged(void* pObject, int32_t nOffset);
-
     template <typename Class>
     void NetworkStateChanged(uintptr_t pObject, NetworkInfo_t& info, const char* pszClassName, const char* pszFieldName)
     {
@@ -118,8 +115,6 @@ namespace schema
             ChainNetworkStateChanged(reinterpret_cast<void*>(pObject + info.chainOffset), info.offset);
         else if constexpr (std::is_base_of_v<CEntityInstance, Class>)
             EntityNetworkStateChanged(reinterpret_cast<CEntityInstance*>(pObject), info.offset);
-        else
-            EmbeddedNetworkStateChanged(reinterpret_cast<void*>(pObject), info.offset);
     }
 }
 

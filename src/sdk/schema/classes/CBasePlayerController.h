@@ -33,7 +33,6 @@
 
 #include <const.h>
 #include <entityhandle.h>
-#include <entitysystem.h>
 #include <gameentitysystem.h>
 
 enum class PlayerConnectedState : uint32_t

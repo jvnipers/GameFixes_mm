@@ -31,7 +31,6 @@
 #include <entity2/entityclass.h>
 #include <entity2/entitykeyvalues.h>
 #include <entity2/entitysystem.h>
-#include <schemasystem/schemasystem.h>
 
 #include <cstdio>
 

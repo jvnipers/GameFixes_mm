@@ -29,7 +29,6 @@
 
 #include <engine2/inetworkserverservice.h>
 #include <engine2/isource2server.h>
-#include <engine2/ivengineserver2.h>
 #include <engine2/networkgameserverbase.h>
 #include <igameevents.h>
 #include <ISmmPlugin.h>

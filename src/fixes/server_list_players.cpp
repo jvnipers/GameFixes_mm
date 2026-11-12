@@ -32,9 +32,9 @@
 
 #include <engine2/isource2server.h>
 #include <engine2/ivengineserver2.h>
-#include <entitysystem.h>
 #include <gameentitysystem.h>
 #include <interfaces/interfaces.h>
+#include <steam/steam_gameserver.h>
 #include <tier0/keyvalues.h>
 
 CServerListPlayersFix::CServerListPlayersFix() :

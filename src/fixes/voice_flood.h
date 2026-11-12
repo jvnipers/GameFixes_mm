@@ -27,11 +27,12 @@
 
 #include "fix.h"
 #include "plugin.h"
-#include "sdk/game/shared/netmessages.h"
 #include "utils.hpp"
 
 #include <const.h>
 #include <engine2/serversideclientbase.h>
+#include <netmessages.pb.h>
+#include <networksystem/inetworkmessages.h>
 
 #include <chrono>
 #include <cstddef>

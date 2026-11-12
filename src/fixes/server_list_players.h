@@ -28,8 +28,6 @@
 #include "fix.h"
 #include "plugin.h"
 
-#include <steam/steam_gameserver.h>
-
 struct Timer;
 
 class CServerListPlayersFix final : public CFix

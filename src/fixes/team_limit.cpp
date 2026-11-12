@@ -29,9 +29,7 @@
 
 #include "vprof.hpp"
 
-#include <engine2/isource2server.h>
 #include <engine2/ivengineserver2.h>
-#include <entitysystem.h>
 #include <gameentitysystem.h>
 #include <interfaces/interfaces.h>
 #include <tier0/tier0_strtools.h>

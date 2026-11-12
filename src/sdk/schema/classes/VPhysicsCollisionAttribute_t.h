@@ -33,10 +33,7 @@
 
 struct VPhysicsCollisionAttribute_t
 {
-    SCHEMA_FIELD(uint8, VPhysicsCollisionAttribute_t, m_nCollisionGroup);
-    SCHEMA_FIELD(uint64, VPhysicsCollisionAttribute_t, m_nInteractsAs);
     SCHEMA_FIELD(uint64, VPhysicsCollisionAttribute_t, m_nInteractsWith);
-    SCHEMA_FIELD(uint64, VPhysicsCollisionAttribute_t, m_nInteractsExclude);
     SCHEMA_FIELD(uint16, VPhysicsCollisionAttribute_t, m_nHierarchyId);
 };
 

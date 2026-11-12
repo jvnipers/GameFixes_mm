@@ -36,7 +36,6 @@ class CCollisionProperty
 {
 public:
     SCHEMA_FIELD(VPhysicsCollisionAttribute_t, CCollisionProperty, m_collisionAttribute);
-    SCHEMA_FIELD(uint8, CCollisionProperty, m_CollisionGroup);
 };
 
 #endif

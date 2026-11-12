@@ -27,7 +27,6 @@
 
 #include "fix.h"
 #include "plugin.h"
-#include "utils.hpp"
 
 class CCSPlayer_MovementServices;
 class CMoveData;

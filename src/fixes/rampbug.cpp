@@ -32,7 +32,6 @@
 
 #include <const.h>
 #include <engine2/gameshareddefs.h>
-#include <engine2/isource2server.h>
 #include <engine2/ivengineserver2.h>
 #include <mathlib/mathlib.h>
 #include <tier0/keyvalues.h>

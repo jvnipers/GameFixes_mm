@@ -44,7 +44,7 @@
 #include "utils.hpp"
 #include "vprof.hpp"
 
-#include <entitysystem.h>
+#include <engine2/ivengineserver2.h>
 #include <interfaces/interfaces.h>
 #include <tier0/buffer_string.h>
 #include <tier0/keyvalues.h>

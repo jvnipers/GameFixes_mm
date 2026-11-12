@@ -1,124 +1,123 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
 import os
 
-mms_root = os.path.abspath(builder.options.mms_path or os.path.join(builder.sourcePath, 'metamod-source'))
-manifests = builder.options.hl2sdk_manifests or os.path.join(mms_root, 'hl2sdk-manifests')
-SdkHelpers = builder.Eval(os.path.join(manifests, 'SdkHelpers.ambuild'), {'Project': 'metamod'})
+mms_root = os.path.abspath(
+    builder.options.mms_path or os.path.join(builder.sourcePath, "metamod-source")
+)
+manifests = builder.options.hl2sdk_manifests or os.path.join(
+    mms_root, "hl2sdk-manifests"
+)
+SdkHelpers = builder.Eval(
+    os.path.join(manifests, "SdkHelpers.ambuild"), {"Project": "metamod"}
+)
+
 
 def FindSdkPath(sdk_name):
-  if builder.options.hl2sdk_root:
-    return os.path.join(builder.options.hl2sdk_root, 'hl2sdk-' + sdk_name)
-  return os.path.join(builder.sourcePath, 's2sdk')
+    if builder.options.hl2sdk_root:
+        return os.path.join(builder.options.hl2sdk_root, "hl2sdk-" + sdk_name)
+    return os.path.join(builder.sourcePath, "s2sdk")
 
-cxx = builder.DetectCxx(target_arch='x86_64')
 
-if builder.options.opt == '1':
-  cxx.defines += ['NDEBUG']
-if builder.options.debug == '1':
-  cxx.defines += ['DEBUG', '_DEBUG']
+cxx = builder.DetectCxx(target_arch="x86_64")
 
-if cxx.target.platform == 'linux':
-  cxx.defines += [
-    'stricmp=strcasecmp',
-    '_stricmp=strcasecmp',
-    '_snprintf=snprintf',
-    '_vsnprintf=vsnprintf',
-    'HAVE_STDINT_H',
-    '_FILE_OFFSET_BITS=64',
-  ]
-  cxx.cflags += [
-    '-pipe',
-    '-fno-strict-aliasing',
-    '-Wall',
-    '-Werror',
-    '-Wno-uninitialized',
-    '-Wno-unused',
-    '-Wno-switch',
-    '-Wno-parentheses',
-    '-Wno-mismatched-tags',
-    '-Wno-deprecated-anon-enum-enum-conversion',
-    '-Wno-ordered-compare-function-pointers',
-    '-Wno-pragma-once-outside-header',
-    '-Wno-ambiguous-reversed-operator',
-    '-Wno-invalid-offsetof',
-    '-msse',
-    '-fPIC',
-    '-fvisibility=hidden',
-  ]
-  cxx.cxxflags += [
-    '-std=c++20',
-    '-fvisibility-inlines-hidden',
-    '-frtti',
-    '-fno-threadsafe-statics',
-    '-Wno-non-virtual-dtor',
-    '-Wno-overloaded-virtual',
-    '-Wno-register',
-    '-Wno-delete-non-virtual-dtor',
-  ]
-  if cxx.family == 'gcc':
-    cxx.cflags += ['-mfpmath=sse']
-    cxx.linkflags += ['-static-libgcc']
-  elif cxx.family == 'clang':
-    cxx.cflags += ['-Wno-implicit-int-float-conversion', '-Wno-tautological-overlap-compare']
-    cxx.cxxflags += [
-      '-Wno-implicit-exception-spec-mismatch',
-      '-Wno-expansion-to-defined',
-      '-Wno-inconsistent-missing-override',
-      '-Wno-deprecated-register',
+if builder.options.opt == "1":
+    cxx.defines += ["NDEBUG"]
+if builder.options.debug == "1":
+    cxx.defines += ["DEBUG", "_DEBUG"]
+
+if cxx.target.platform == "linux":
+    cxx.defines += [
+        "stricmp=strcasecmp",
+        "_stricmp=strcasecmp",
+        "_snprintf=snprintf",
+        "_vsnprintf=vsnprintf",
+        "HAVE_STDINT_H",
+        "_FILE_OFFSET_BITS=64",
     ]
-    cxx.linkflags += ['-lgcc_eh']
-  cxx.linkflags += ['-static-libstdc++']
-  if builder.options.opt == '1':
-    cxx.cflags += ['-O3']
-  if builder.options.debug == '1':
-    cxx.cflags += ['-g3']
-  # After the optimization flags, which could otherwise turn it back off.
-  cxx.cflags += ['-fno-omit-frame-pointer']
-elif cxx.target.platform == 'windows':
-  if builder.options.debug == '1':
-    cxx.cflags += ['/MTd']
-    cxx.linkflags += ['/NODEFAULTLIB:libcmt']
-  else:
-    cxx.cflags += ['/MT']
-  cxx.defines += [
-    '_CRT_SECURE_NO_DEPRECATE',
-    '_CRT_SECURE_NO_WARNINGS',
-    '_CRT_NONSTDC_NO_DEPRECATE',
-    '_WINDOWS',
-  ]
-  cxx.cflags += ['/W3', '/Zi', '/EHsc', '/std:c++20', '/bigobj', '/utf-8']
-  cxx.cxxflags += ['/TP']
-  cxx.linkflags += [
-    '/SUBSYSTEM:WINDOWS',
-    'kernel32.lib',
-    'user32.lib',
-    'gdi32.lib',
-    'winspool.lib',
-    'comdlg32.lib',
-    'advapi32.lib',
-    'shell32.lib',
-    'ole32.lib',
-    'oleaut32.lib',
-    'uuid.lib',
-    'odbc32.lib',
-    'odbccp32.lib',
-  ]
-  if builder.options.opt == '1':
-    cxx.cflags += ['/Ox', '/Zo']
-    cxx.linkflags += ['/OPT:ICF', '/OPT:REF']
-  if builder.options.debug == '1':
-    cxx.cflags += ['/Od', '/RTC1']
-  # After the optimization flags, which could otherwise turn it back off.
-  cxx.cflags += ['/Oy-']
+    cxx.cflags += [
+        "-pipe",
+        "-fno-strict-aliasing",
+        "-Wall",
+        "-Werror",
+        "-Wno-uninitialized",
+        "-Wno-unused",
+        "-Wno-switch",
+        "-Wno-parentheses",
+        "-Wno-mismatched-tags",
+        "-Wno-deprecated-anon-enum-enum-conversion",
+        "-Wno-ordered-compare-function-pointers",
+        "-Wno-pragma-once-outside-header",
+        "-Wno-ambiguous-reversed-operator",
+        "-Wno-invalid-offsetof",
+        "-msse",
+        "-fPIC",
+        "-fvisibility=hidden",
+    ]
+    cxx.cxxflags += [
+        "-std=c++20",
+        "-fvisibility-inlines-hidden",
+        "-frtti",
+        "-fno-threadsafe-statics",
+        "-Wno-non-virtual-dtor",
+        "-Wno-overloaded-virtual",
+        "-Wno-register",
+        "-Wno-delete-non-virtual-dtor",
+    ]
+    if cxx.family == "gcc":
+        cxx.cflags += ["-mfpmath=sse"]
+        cxx.linkflags += ["-static-libgcc"]
+    elif cxx.family == "clang":
+        cxx.cflags += [
+            "-Wno-implicit-int-float-conversion",
+            "-Wno-tautological-overlap-compare",
+        ]
+        cxx.cxxflags += [
+            "-Wno-implicit-exception-spec-mismatch",
+            "-Wno-expansion-to-defined",
+            "-Wno-inconsistent-missing-override",
+            "-Wno-deprecated-register",
+        ]
+        cxx.linkflags += ["-lgcc_eh"]
+    cxx.linkflags += ["-static-libstdc++"]
+    if builder.options.opt == "1":
+        cxx.cflags += ["-O3"]
+    if builder.options.debug == "1":
+        cxx.cflags += ["-g3"]
+    # After the optimization flags, which could otherwise turn it back off.
+    cxx.cflags += ["-fno-omit-frame-pointer"]
+elif cxx.target.platform == "windows":
+    if builder.options.debug == "1":
+        cxx.cflags += ["/MTd"]
+        cxx.linkflags += ["/NODEFAULTLIB:libcmt"]
+    else:
+        cxx.cflags += ["/MT"]
+    cxx.defines += [
+        "_CRT_SECURE_NO_DEPRECATE",
+        "_CRT_SECURE_NO_WARNINGS",
+        "_CRT_NONSTDC_NO_DEPRECATE",
+        "_WINDOWS",
+    ]
+    cxx.cflags += ["/W3", "/Zi", "/EHsc", "/std:c++20", "/bigobj", "/utf-8"]
+    cxx.cxxflags += ["/TP"]
+    if builder.options.opt == "1":
+        cxx.cflags += ["/Ox", "/Zo"]
+        cxx.linkflags += ["/OPT:ICF", "/OPT:REF"]
+    if builder.options.debug == "1":
+        cxx.cflags += ["/Od", "/RTC1"]
+    # After the optimization flags, which could otherwise turn it back off.
+    cxx.cflags += ["/Oy-"]
 else:
-  raise Exception('Unsupported target platform: {}'.format(cxx.target.platform))
+    raise Exception("Unsupported target platform: {}".format(cxx.target.platform))
 
 SdkHelpers.find_sdk_path = FindSdkPath
-SdkHelpers.findSdks(builder, [cxx], ['cs2'])
+SdkHelpers.findSdks(builder, [cxx], ["cs2"])
 
-plugin = builder.Build('AMBuilder', {
-  'SdkHelpers': SdkHelpers,
-  'sdk_target': SdkHelpers.sdk_targets[0],
-  'mms_root': mms_root,
-})
-builder.Build('PackageScript', {'plugin': plugin, 'platform': cxx.target.platform})
+plugin = builder.Build(
+    "AMBuilder",
+    {
+        "SdkHelpers": SdkHelpers,
+        "sdk_target": SdkHelpers.sdk_targets[0],
+        "mms_root": mms_root,
+    },
+)
+builder.Build("PackageScript", {"plugin": plugin, "platform": cxx.target.platform})
