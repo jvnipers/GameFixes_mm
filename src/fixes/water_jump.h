@@ -53,5 +53,5 @@ public:
 private:
     static int GetSlot(CCSPlayer_MovementServices* pServices);
 
-    bool m_bSkipNextCategorize[64] = {};
+    bool m_bSkipNextCategorize[ABSOLUTE_PLAYER_LIMIT] = {};
 };

@@ -30,15 +30,11 @@
 #include "sdk/game/shared/movedata.h"
 
 #include <gametrace.h>
+#include <mathlib/aabb.h>
 #include <mathlib/vector.h>
 
 class CBasePlayerPawn;
 class CCSPlayer_MovementServices;
-struct PlayerBounds_t
-{
-    Vector mins;
-    Vector maxs;
-};
 
 class CRampbugFix final : public CFix
 {
@@ -92,14 +88,14 @@ private:
     static void GetVelocity(const PlayerState& state, CBasePlayerPawn* pPawn, Vector& vecOut);
     static void SetOrigin(PlayerState& state, CBasePlayerPawn* pPawn, const Vector& vecOrigin);
     static void SetVelocity(PlayerState& state, CBasePlayerPawn* pPawn, const Vector& vecVelocity);
-    static void GetBounds(CCSPlayer_MovementServices* pServices, PlayerBounds_t& bounds);
+    static void GetBounds(CCSPlayer_MovementServices* pServices, AABB_t& bounds);
 
     void RegisterLanding(PlayerState& state, CBasePlayerPawn* pPawn, const Vector& vecVelocity);
     void ApplySlopeFix(PlayerState& state, CBasePlayerPawn* pPawn);
-    bool IsValidMovementTrace(trace_t& trace, const PlayerBounds_t& bounds, CTraceFilter* pFilter);
+    bool IsValidMovementTrace(trace_t& trace, const AABB_t& bounds, CTraceFilter* pFilter);
 
-    void TracePlayerBBox(const Vector& start, const Vector& end, const PlayerBounds_t& bounds, CTraceFilter* pFilter, trace_t& pm);
+    void TracePlayerBBox(const Vector& start, const Vector& end, const AABB_t& bounds, CTraceFilter* pFilter, trace_t& pm);
     void* m_pNavPhysicsVTable = nullptr;
 
-    PlayerState m_states[64];
+    PlayerState m_states[ABSOLUTE_PLAYER_LIMIT];
 };

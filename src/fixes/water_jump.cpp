@@ -85,7 +85,7 @@ int CWaterJumpFix::GetSlot(CCSPlayer_MovementServices* pServices)
 
     // Controllers sit at entity index 1..64, one per slot.
     const int nSlot = pController->GetEntityIndex().Get() - 1;
-    return (nSlot >= 0 && nSlot < 64) ? nSlot : -1;
+    return (nSlot >= 0 && nSlot < ABSOLUTE_PLAYER_LIMIT) ? nSlot : -1;
 }
 
 KHook::Return<void> CWaterJumpFix::CCSPlayer_MovementServices_WaterMove(CCSPlayer_MovementServices* pThis, CMoveData* pMove)

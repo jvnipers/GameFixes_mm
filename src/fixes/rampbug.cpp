@@ -162,11 +162,11 @@ void CRampbugFix::Unload()
     m_pNavPhysicsVTable = nullptr;
 }
 
-void CRampbugFix::TracePlayerBBox(const Vector& start, const Vector& end, const PlayerBounds_t& bounds, CTraceFilter* pFilter, trace_t& pm)
+void CRampbugFix::TracePlayerBBox(const Vector& start, const Vector& end, const AABB_t& bounds, CTraceFilter* pFilter, trace_t& pm)
 {
     // Stateless interface: a pointer to its vtable pointer stands in for the object.
     auto* pNavPhysics = reinterpret_cast<INavPhysicsInterface*>(&m_pNavPhysicsVTable);
-    pNavPhysics->Nav_TraceShape(Ray_t(bounds.mins, bounds.maxs), start, end, pFilter, &pm);
+    pNavPhysics->Nav_TraceShape(Ray_t(bounds.m_vMinBounds, bounds.m_vMaxBounds), start, end, pFilter, &pm);
 }
 
 void CRampbugFix::OnStartupServer(const GameSessionConfiguration_t& config, const char* pszMapName)
@@ -187,7 +187,7 @@ CRampbugFix::PlayerState* CRampbugFix::GetState(CCSPlayer_MovementServices* pSer
 
     // Controllers sit at entity index 1..64, one per slot.
     const int nSlot = pController->GetEntityIndex().Get() - 1;
-    if (nSlot < 0 || nSlot >= 64)
+    if (nSlot < 0 || nSlot >= ABSOLUTE_PLAYER_LIMIT)
         return nullptr;
 
     if (ppPawn)
@@ -229,10 +229,10 @@ void CRampbugFix::SetVelocity(PlayerState& state, CBasePlayerPawn* pPawn, const 
         pPawn->m_vecAbsVelocity() = vecVelocity;
 }
 
-void CRampbugFix::GetBounds(CCSPlayer_MovementServices* pServices, PlayerBounds_t& bounds)
+void CRampbugFix::GetBounds(CCSPlayer_MovementServices* pServices, AABB_t& bounds)
 {
-    bounds.mins = Vector(-16.0f, -16.0f, 0.0f);
-    bounds.maxs = Vector(16.0f, 16.0f, pServices->m_bDucked() ? 54.0f : 72.0f);
+    bounds.m_vMinBounds = Vector(-16.0f, -16.0f, 0.0f);
+    bounds.m_vMaxBounds = Vector(16.0f, 16.0f, pServices->m_bDucked() ? 54.0f : 72.0f);
 }
 
 void CRampbugFix::RegisterLanding(PlayerState& state, CBasePlayerPawn* pPawn, const Vector& vecVelocity)
@@ -247,7 +247,7 @@ void CRampbugFix::ApplySlopeFix(PlayerState& state, CBasePlayerPawn* pPawn)
     if (!state.bProcessingMovement || !state.pMoveData)
         return;
 
-    PlayerBounds_t bounds;
+    AABB_t bounds;
     GetBounds(static_cast<CCSPlayer_MovementServices*>(pPawn->m_pMovementServices()), bounds);
 
     CTraceFilterPlayerMovementCS filter(pPawn);
@@ -282,7 +282,7 @@ void CRampbugFix::ApplySlopeFix(PlayerState& state, CBasePlayerPawn* pPawn)
     }
 }
 
-bool CRampbugFix::IsValidMovementTrace(trace_t& trace, const PlayerBounds_t& bounds, CTraceFilter* pFilter)
+bool CRampbugFix::IsValidMovementTrace(trace_t& trace, const AABB_t& bounds, CTraceFilter* pFilter)
 {
     if (trace.m_bStartInSolid)
         return false;
@@ -398,7 +398,7 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMove(CCSPla
     unsigned numPlanes = 0;
     trace_t pierce;
 
-    PlayerBounds_t bounds;
+    AABB_t bounds;
     GetBounds(pThis, bounds);
 
     CTraceFilterPlayerMovementCS filter(pPawn);
@@ -616,7 +616,7 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_CategorizePosition(C
     if (velocity.z > -64.0f)
         return { KHook::Action::Ignore };
 
-    PlayerBounds_t bounds;
+    AABB_t bounds;
     GetBounds(pThis, bounds);
 
     CTraceFilterPlayerMovementCS filter(pPawn);

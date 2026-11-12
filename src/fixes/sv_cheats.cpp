@@ -74,7 +74,7 @@ void CSvCheatsFix::OnSvCheatsDisabled()
     int iFixed = 0;
     for (int i = 0; i < pGlobals->maxClients; i++)
     {
-        auto* pController = static_cast<CBasePlayerController*>(pEntitySystem->GetEntityInstance(CEntityIndex(i + 1)));
+        auto* pController = static_cast<CBasePlayerController*>(pEntitySystem->GetPlayerController(CPlayerSlot(i)));
         if (!pController || !pController->IsConnected())
             continue;
 

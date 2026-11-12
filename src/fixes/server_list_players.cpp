@@ -120,7 +120,7 @@ void CServerListPlayersFix::UpdatePlayers()
         if (!pSteamId)
             continue;
 
-        auto* pController = static_cast<CBasePlayerController*>(pEntitySystem->GetEntityInstance(CEntityIndex(i + 1)));
+        auto* pController = static_cast<CBasePlayerController*>(pEntitySystem->GetPlayerController(CPlayerSlot(i)));
         if (!pController)
             continue;
 
