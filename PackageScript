@@ -1,25 +1,31 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
 import os
 
-builder.SetBuildFolder('package')
+builder.SetBuildFolder("package")
 
-bin_platform = {'windows': 'win64', 'linux': 'linuxsteamrt64'}[platform]
+bin_platform = {"windows": "win64", "linux": "linuxsteamrt64"}[platform]
 
-builder.AddCopy(plugin.binary, builder.AddFolder(os.path.join('cs2', 'addons', 'game_fixes', 'bin', bin_platform)))
+builder.AddCopy(
+    plugin.binary,
+    builder.AddFolder(os.path.join("cs2", "addons", "game_fixes", "bin", bin_platform)),
+)
 
-builder.AddFolder(os.path.join('cs2', 'addons', 'metamod'))
-builder.AddOutputFile(os.path.join('cs2', 'addons', 'metamod', 'game_fixes.vdf'), (
-  '"Metamod Plugin"\n'
-  '{\n'
-  '\t"alias"\t"game_fixes"\n'
-  '\t"file"\t"addons/game_fixes/bin/' + bin_platform + '/game_fixes"\n'
-  '}\n'
-).encode('utf-8'))
+builder.AddFolder(os.path.join("cs2", "addons", "metamod"))
+builder.AddOutputFile(
+    os.path.join("cs2", "addons", "metamod", "game_fixes.vdf"),
+    (
+        '"Metamod Plugin"\n'
+        "{\n"
+        '\t"alias"\t"game_fixes"\n'
+        '\t"file"\t"addons/game_fixes/bin/' + bin_platform + '/game_fixes"\n'
+        "}\n"
+    ).encode("utf-8"),
+)
 
-configs = os.path.join(builder.sourcePath, 'configs')
+configs = os.path.join(builder.sourcePath, "configs")
 for root, _, files in os.walk(configs):
-  for f in files:
-    src = os.path.join(root, f)
-    dst = os.path.join('cs2', os.path.relpath(src, configs))
-    builder.AddFolder(os.path.dirname(dst))
-    builder.AddCopy(src, dst)
+    for f in files:
+        src = os.path.join(root, f)
+        dst = os.path.join("cs2", os.path.relpath(src, configs))
+        builder.AddFolder(os.path.dirname(dst))
+        builder.AddCopy(src, dst)
