@@ -40,4 +40,4 @@ public:
     SCHEMA_FIELD(int32_t, CCSPlayer_MovementServices, m_nGameCodeHasMovedPlayerAfterCommand);
 };
 
-#endif // _INCLUDE_CCSPLAYER_MOVEMENTSERVICES_H
+#endif

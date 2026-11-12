@@ -28,7 +28,6 @@
 #include "utils.hpp"
 #include "vprof.hpp"
 
-#include <dynlibutils/module.hpp>
 #include <entity2/entityclass.h>
 #include <entity2/entitykeyvalues.h>
 #include <entity2/entitysystem.h>
@@ -36,11 +35,8 @@
 
 #include <cstdio>
 
-using namespace DynLibUtils;
-
 namespace
 {
-    // What the entity system checks before it runs a class's constructor.
     bool IsConstructible(const CSchemaClassInfo* pInfo)
     {
         // The binding the game reads the flags from is the primary one.
@@ -61,18 +57,17 @@ CAbstractEntityFix::CAbstractEntityFix() :
 
 bool CAbstractEntityFix::Load(const FixModules& modules, char* error, size_t maxlen)
 {
-    // CEntityInstance* CEntitySystem::CreateEntityFromKeyValues(CEntityKeyValues* pKeyValues, SpawnGroupHandle_t hSpawnGroup)
-    // -- the function logging "CEntitySystem::PrecacheEntity: Classname missing from entity!".
-    CMemory pCreate = modules.server.FindPattern(ParseStringPattern(WIN_LINUX("40 56 57 41 56 41 57 48 81 EC 98 00 00 00", "55 48 8D 05 ? ? ? ? 48 89 E5 41 57 4C 8D 7D ? 41 56 49 89 F6")));
+    // Logs "CEntitySystem::PrecacheEntity: Classname missing from entity!"
+    void* pCreate = FindPattern(modules.server, WIN_LINUX("40 56 57 41 56 41 57 48 81 EC 98 00 00 00", "55 48 8D 05 ? ? ? ? 48 89 E5 41 57 4C 8D 7D ? 41 56 49 89 F6"));
     if (!pCreate)
     {
         std::snprintf(error, maxlen, "CEntitySystem::CreateEntityFromKeyValues not found");
         return false;
     }
 
-    m_hCreateEntityFromKeyValues->Configure(pCreate.GetPtr());
+    m_hCreateEntityFromKeyValues->Configure(pCreate);
 
-    Log("hooked CEntitySystem::CreateEntityFromKeyValues (%p)", pCreate.GetPtr());
+    Log("hooked CEntitySystem::CreateEntityFromKeyValues (%p)", pCreate);
     return true;
 }
 

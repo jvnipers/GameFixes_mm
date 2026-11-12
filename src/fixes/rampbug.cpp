@@ -31,7 +31,6 @@
 #include "vprof.hpp"
 
 #include <const.h>
-#include <dynlibutils/module.hpp>
 #include <engine2/gameshareddefs.h>
 #include <engine2/isource2server.h>
 #include <engine2/ivengineserver2.h>
@@ -43,8 +42,6 @@
 #include <cstdio>
 #include <cstring>
 
-using namespace DynLibUtils;
-
 namespace
 {
     constexpr int MAX_BUMPS = 4;
@@ -53,7 +50,6 @@ namespace
     constexpr float RAMP_BUG_VELOCITY_THRESHOLD = 0.95f;
     constexpr float NEW_RAMP_THRESHOLD = 0.95f;
 
-    // The movement pass's own filter: the player and whatever it owns pass through, everything the player collides with counts.
     struct CTraceFilterPlayerMovementCS : public CTraceFilter
     {
         explicit CTraceFilterPlayerMovementCS(CBasePlayerPawn* pPawn) :
@@ -118,44 +114,41 @@ CRampbugFix::CRampbugFix() :
 
 bool CRampbugFix::Load(const FixModules& modules, char* error, size_t maxlen)
 {
-    CMemory pNavPhysicsVTable = modules.server.GetVirtualTableByName("CNavPhysicsInterface");
+    void* pNavPhysicsVTable = sig::FindVirtualTable(modules.server, "CNavPhysicsInterface");
     if (!pNavPhysicsVTable)
     {
         std::snprintf(error, maxlen, "CNavPhysicsInterface vtable not found");
         return false;
     }
 
-    // void CCSPlayer_MovementServices::ProcessMovement(void* pMove)
-    CMemory pProcessMovement = modules.server.FindPattern(ParseStringPattern(WIN_LINUX("40 57 41 57 48 81 EC ? ? ? ? 48 83 79", "55 48 89 E5 41 57 41 56 41 55 49 89 F5 41 54 53 48 89 FB 48 83 EC ? 48 8B 7F")));
+    void* pProcessMovement = FindPattern(modules.server, WIN_LINUX("40 57 41 57 48 81 EC ? ? ? ? 48 83 79", "55 48 89 E5 41 57 41 56 41 55 49 89 F5 41 54 53 48 89 FB 48 83 EC ? 48 8B 7F"));
     if (!pProcessMovement)
     {
         std::snprintf(error, maxlen, "CCSPlayer_MovementServices::ProcessMovement not found");
         return false;
     }
 
-    // void CCSPlayer_MovementServices::TryPlayerMove(CMoveData* mv, Vector* pFirstDest, trace_t* pFirstTrace, bool* bIsSurfing)
-    CMemory pTryPlayerMove = modules.server.FindPattern(ParseStringPattern(WIN_LINUX("48 8B C4 4C 89 48 ? 4C 89 40 ? 48 89 50 ? 48 89 48 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70", "48 B8 ? ? ? ? ? ? ? ? 55 66 0F EF C0 48 89 E5 41 57 41 56 49 89 F6")));
+    void* pTryPlayerMove = FindPattern(modules.server, WIN_LINUX("48 8B C4 4C 89 48 ? 4C 89 40 ? 48 89 50 ? 48 89 48 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70", "48 B8 ? ? ? ? ? ? ? ? 55 66 0F EF C0 48 89 E5 41 57 41 56 49 89 F6"));
     if (!pTryPlayerMove)
     {
         std::snprintf(error, maxlen, "CCSPlayer_MovementServices::TryPlayerMove not found");
         return false;
     }
 
-    // void CCSPlayer_MovementServices::CategorizePosition(CMoveData* mv, bool bStayOnGround)
-    CMemory pCategorizePosition = modules.server.FindPattern(ParseStringPattern(WIN_LINUX("40 55 56 57 41 54 41 55 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B F9", "48 B8 ? ? ? ? ? ? ? ? 55 66 0F EF C0 48 89 E5 41 57 41 56 41 55 41 89 D5")));
+    void* pCategorizePosition = FindPattern(modules.server, WIN_LINUX("40 55 56 57 41 54 41 55 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B F9", "48 B8 ? ? ? ? ? ? ? ? 55 66 0F EF C0 48 89 E5 41 57 41 56 41 55 41 89 D5"));
     if (!pCategorizePosition)
     {
         std::snprintf(error, maxlen, "CCSPlayer_MovementServices::CategorizePosition not found");
         return false;
     }
 
-    m_pNavPhysicsVTable = pNavPhysicsVTable.GetPtr();
+    m_pNavPhysicsVTable = pNavPhysicsVTable;
 
-    m_hProcessMovement->Configure(pProcessMovement.GetPtr());
-    m_hTryPlayerMove->Configure(pTryPlayerMove.GetPtr());
-    m_hCategorizePosition->Configure(pCategorizePosition.GetPtr());
+    m_hProcessMovement->Configure(pProcessMovement);
+    m_hTryPlayerMove->Configure(pTryPlayerMove);
+    m_hCategorizePosition->Configure(pCategorizePosition);
 
-    Log("hooked ProcessMovement (%p), TryPlayerMove (%p) and CategorizePosition (%p); CNavPhysicsInterface vtable at %p; TryPlayerMove override %s", pProcessMovement.GetPtr(), pTryPlayerMove.GetPtr(), pCategorizePosition.GetPtr(), m_pNavPhysicsVTable, m_bOverrideTryPlayerMove ? "on" : "off");
+    Log("hooked ProcessMovement (%p), TryPlayerMove (%p) and CategorizePosition (%p); CNavPhysicsInterface vtable at %p; TryPlayerMove override %s", pProcessMovement, pTryPlayerMove, pCategorizePosition, m_pNavPhysicsVTable, m_bOverrideTryPlayerMove ? "on" : "off");
     return true;
 }
 
@@ -172,8 +165,7 @@ void CRampbugFix::Unload()
 
 void CRampbugFix::TracePlayerBBox(const Vector& start, const Vector& end, const PlayerBounds_t& bounds, CTraceFilter* pFilter, trace_t& pm)
 {
-    // The interface has no state of its own: a pointer to its vtable pointer
-    // stands in for the object.
+    // Stateless interface: a pointer to its vtable pointer stands in for the object.
     auto* pNavPhysics = reinterpret_cast<INavPhysicsInterface*>(&m_pNavPhysicsVTable);
     pNavPhysics->Nav_TraceShape(Ray_t(bounds.mins, bounds.maxs), start, end, pFilter, &pm);
 }
@@ -205,9 +197,7 @@ CRampbugFix::PlayerState* CRampbugFix::GetState(CCSPlayer_MovementServices* pSer
     return &m_states[nSlot];
 }
 
-// Inside a pass the move data is where the player is: the game writes the scene
-// node's origin only after each subtick step, so reading that one would trace
-// from where the player was before this step's move.
+// The game writes the scene node's origin only after each subtick step.
 void CRampbugFix::GetOrigin(const PlayerState& state, CBasePlayerPawn* pPawn, Vector& vecOut)
 {
     if (state.bProcessingMovement && state.pMoveData)
@@ -226,7 +216,6 @@ void CRampbugFix::GetVelocity(const PlayerState& state, CBasePlayerPawn* pPawn, 
 
 void CRampbugFix::SetOrigin(PlayerState& state, CBasePlayerPawn* pPawn, const Vector& vecOrigin)
 {
-    // Only ever reached from inside a pass, where the move data is what the game reads back.
     if (state.bProcessingMovement && state.pMoveData)
         state.pMoveData->m_vecAbsOrigin = vecOrigin;
     else
@@ -254,8 +243,7 @@ void CRampbugFix::RegisterLanding(PlayerState& state, CBasePlayerPawn* pPawn, co
     state.vecLandingVelocity = vecVelocity;
 }
 
-// Landing on a slope: the game clips the landing velocity against the slope
-// and loses speed the player should keep.
+// The game clips the landing velocity against the slope and loses speed.
 void CRampbugFix::ApplySlopeFix(PlayerState& state, CBasePlayerPawn* pPawn)
 {
     if (!state.bProcessingMovement || !state.pMoveData)
@@ -309,14 +297,12 @@ bool CRampbugFix::IsValidMovementTrace(trace_t& trace, const PlayerBounds_t& bou
     if (fabsf(trace.m_vHitNormal.x) > 1.0f || fabsf(trace.m_vHitNormal.y) > 1.0f || fabsf(trace.m_vHitNormal.z) > 1.0f)
         return false;
 
-    // An unswept trace and a backward one, to be sure.
     trace_t stuck;
     TracePlayerBBox(trace.m_vEndPos, trace.m_vEndPos, bounds, pFilter, stuck);
     if (stuck.m_bStartInSolid || stuck.m_flFraction < 1.0f - FLT_EPSILON)
         return false;
 
-    // Since the Call to Arms update a trace can hit in one direction only, so
-    // the backward fraction is not checked.
+    // Since Call to Arms a trace hits in one direction only, so the backward fraction is not checked.
     TracePlayerBBox(trace.m_vEndPos, trace.m_vStartPos, bounds, pFilter, stuck);
     if (stuck.m_bStartInSolid)
         return false;
@@ -333,7 +319,7 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_ProcessMovement(CCSP
     if (!pState)
         return { KHook::Action::Ignore };
 
-    // Moved by game code since the last pass (a teleport): the surface it was on is not where it is now
+    // Moved by game code since the last pass (a teleport)
     const int nGameCodeMoves = pThis->m_nGameCodeHasMovedPlayerAfterCommand();
     if (nGameCodeMoves != pState->nGameCodeMoves)
     {
@@ -381,9 +367,7 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_ProcessMovementPost(
     return { KHook::Action::Ignore };
 }
 
-// The pass's own walk along the ramp, redone with every trace nudged off the
-// last valid plane, so a trace that stops a hair short of the ramp (or on
-// its edge) cannot hand the game a plane the player never hit.
+// The pass's walk, redone with every trace nudged off the last valid plane.
 KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMove(CCSPlayer_MovementServices* pThis, CMoveData* pMove, Vector* pFirstDest, trace_t* pFirstTrace, bool* pIsSurfing)
 {
     GF_VPROF("GameFixes::rampbug::TryPlayerMove");
@@ -429,7 +413,6 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMove(CCSPla
 
     for (bumpCount = 0; bumpCount < MAX_BUMPS; bumpCount++)
     {
-        // Assume the whole way from the origin to the end point is free.
         VectorMA(start, timeLeft, velocity, end);
 
         if (pFirstDest && end == *pFirstDest)
@@ -443,7 +426,7 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMove(CCSPla
                 continue;
 
             if (IsValidMovementTrace(pm, bounds, &filter) && pm.m_flFraction == 1.0f)
-                break;  // nothing in the way
+                break;
 
             if (state.vecLastValidPlane.Length() > FLT_EPSILON
                 && (!IsValidMovementTrace(pm, bounds, &filter) || pm.m_vHitNormal.Dot(state.vecLastValidPlane) < RAMP_BUG_THRESHOLD
@@ -484,7 +467,6 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMove(CCSPla
                                 if (!IsValidMovementTrace(pierce, bounds, &filter))
                                     continue;
 
-                                // Until a similar plane is hit.
                                 validPlane = pierce.m_flFraction < 1.0f && pierce.m_flFraction > 0.1f && pierce.m_vHitNormal.Dot(state.vecLastValidPlane) >= RAMP_BUG_THRESHOLD;
                                 hitNewPlane = pm.m_vHitNormal.Dot(pierce.m_vHitNormal) < NEW_RAMP_THRESHOLD && state.vecLastValidPlane.Dot(pierce.m_vHitNormal) > NEW_RAMP_THRESHOLD;
                                 goodTrace = CloseEnough(pierce.m_flFraction, 1.0f, FLT_EPSILON) || validPlane;
@@ -494,7 +476,6 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMove(CCSPla
 
                             if (goodTrace || hitNewPlane)
                             {
-                                // Back to the original end point, for its normal.
                                 trace_t test;
                                 TracePlayerBBox(pierce.m_vEndPos, end, bounds, &filter, test);
                                 pm = pierce;
@@ -559,16 +540,15 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMove(CCSPla
                 for (j = 0; j < numPlanes; j++)
                 {
                     if (j != i && velocity.Dot(planes[j]) < 0)
-                        break;  // moving against this plane now
+                        break;
                 }
 
                 if (j == numPlanes)
-                    break;  // no clip needed
+                    break;
             }
 
             if (i == numPlanes)
             {
-                // Along the crease.
                 if (numPlanes != 2)
                 {
                     velocity = vec3_origin;
@@ -612,7 +592,6 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMovePost(CC
     Vector velocity;
     GetVelocity(*pState, pPawn, velocity);
 
-    // The game took the player somewhere our own walk did not: put ours back.
     const bool velocityHeavilyModified = pState->vecTPMVelocity.Normalized().Dot(velocity.Normalized()) < RAMP_BUG_THRESHOLD
         || (pState->vecTPMVelocity.Length() > 50.0f && velocity.Length() / pState->vecTPMVelocity.Length() < RAMP_BUG_VELOCITY_THRESHOLD);
 
@@ -625,8 +604,7 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_TryPlayerMovePost(CC
     return { KHook::Action::Ignore };
 }
 
-// Going down a ramp fast, the ground check can find a standable plane the
-// player is not really on; nudge them onto the last valid plane first.
+// Fast down a ramp, the ground check can find a standable plane the player is not on.
 KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_CategorizePosition(CCSPlayer_MovementServices* pThis, CMoveData* pMove, bool bStayOnGround)
 {
     GF_VPROF("GameFixes::rampbug::CategorizePosition");
@@ -638,14 +616,12 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_CategorizePosition(C
 
     PlayerState& state = *pState;
 
-    // Already colliding with a standable, valid plane: nothing to check.
     if (bStayOnGround || state.vecLastValidPlane.Length() < 0.000001f || state.vecLastValidPlane.z > 0.7f)
         return { KHook::Action::Ignore };
 
     Vector velocity;
     GetVelocity(state, pPawn, velocity);
 
-    // Only worth it going down at some speed.
     if (velocity.z > -64.0f)
         return { KHook::Action::Ignore };
 
@@ -665,7 +641,6 @@ KHook::Return<void> CRampbugFix::CCSPlayer_MovementServices_CategorizePosition(C
     if (trace.m_flFraction == 1.0f)
         return { KHook::Action::Ignore };
 
-    // Something the player could actually stand on?
     if (trace.m_flFraction < 0.95f && trace.m_vHitNormal.z > 0.7f && state.vecLastValidPlane.Dot(trace.m_vHitNormal) < RAMP_BUG_THRESHOLD)
     {
         origin += state.vecLastValidPlane * 0.0625f;

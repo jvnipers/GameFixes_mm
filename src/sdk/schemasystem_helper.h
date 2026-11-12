@@ -29,27 +29,7 @@
 #pragma once
 #endif
 
-//=============================================================================
-//
-// Purpose: Minimal schema field access for standalone Metamod plugins
-//
-// Usage:
-//   class CBaseEntity : public CEntityInstance
-//   {
-//   public:
-//       SCHEMA_FIELD(int32_t, CBaseEntity, m_iHealth);
-//   };
-//
-//   pEntity->m_iHealth() = 100;               write (no network update by itself)
-//   pEntity->m_iHealth.NetworkStateChanged(); replicate it to clients
-//
-// className must be the schema class that declares the field (it is also the
-// C++ class the macro sits in). A class or field missing from the schema is
-// reported once and reads/writes scratch memory instead of the object's.
-//
-//=============================================================================
-
-
+// className must be the schema class that declares the field. A missing class or field is reported once and reads/writes scratch memory.
 
 #include <entity2/entityinstance.h>
 #include <networksystem/networkvar.h>
@@ -62,10 +42,9 @@
 
 namespace schema
 {
-    // Offset of pszClassName::pszFieldName, or -1 (with a warning) when it does not exist.
+    // -1 (with a warning) when missing.
     int32_t GetOffset(const char* pszClassName, const char* pszFieldName);
 
-    // The C++ name of T at compile time ("CChicken"); schema class names are the C++ ones.
     template <typename T>
     constexpr std::string_view ClassName()
     {
@@ -88,7 +67,6 @@ namespace schema
         return name;
     }
 
-    // ClassName<T>() as a null-terminated string, for the functions below.
     template <typename T>
     const char* ClassNameCStr()
     {
@@ -96,26 +74,20 @@ namespace schema
         return s_className.c_str();
     }
 
-    // Each function taking a class name also takes the class as a type or as a
-    // pointer (its static type): GetOffset<CChicken>("m_leader"), GetOffset(this, "m_leader").
     template <typename T>
     int32_t GetOffset(const char* pszFieldName) { return GetOffset(ClassNameCStr<T>(), pszFieldName); }
     template <typename T>
     int32_t GetOffset(const T*, const char* pszFieldName) { return GetOffset<T>(pszFieldName); }
 
-    // Zeroed scratch memory a missing field resolves to, so nothing outside it
-    // gets read or overwritten. Shared by all missing fields, 4 KiB.
     void* GetMissingFieldStorage();
 
-    // Offset of the class' __m_pChainEntity (CNetworkVarChainer), walking up base
-    // classes (e.g. CCSGameRules -> ... -> CGameRules). 0 when there is none.
+    // 0 when the class has no __m_pChainEntity.
     int32_t GetChainOffset(const char* pszClassName);
     template <typename T>
     int32_t GetChainOffset() { return GetChainOffset(ClassNameCStr<T>()); }
     template <typename T>
     int32_t GetChainOffset(const T*) { return GetChainOffset<T>(); }
 
-    // How NetworkStateChanged() reaches the engine for one field.
     struct NetworkInfo_t
     {
         bool resolved = false;  // false until the entity system exists; resolve again later
@@ -133,14 +105,9 @@ namespace schema
     void EntityNetworkStateChanged(CEntityInstance* pEntity, int32_t nOffset);
     void ChainNetworkStateChanged(void* pNetworkVarChainer, int32_t nOffset);
 
-    // For an object embedded in an entity (CEconItemView, CCollisionProperty, ...):
-    // the engine wraps it in a NetworkVar_<field> class whose NetworkStateChanged
-    // virtual forwards to the owner. Its vtable slot is found at runtime from the
-    // object's own vtable. A plain object that is not embedded has none: no-op.
+    // Through the NetworkVar_<field> wrapper's NetworkStateChanged, found from the object's vtable; no-op when not embedded.
     void EmbeddedNetworkStateChanged(void* pObject, int32_t nOffset);
 
-    // Routes the notification: chain entity if the class has one, the entity itself
-    // for entity classes, otherwise the embedded object's NetworkVar wrapper.
     template <typename Class>
     void NetworkStateChanged(uintptr_t pObject, NetworkInfo_t& info, const char* pszClassName, const char* pszFieldName)
     {
@@ -160,7 +127,6 @@ namespace schema
 }
 
 #define _SCHEMA_FIELD_COMMON(type, className, propName)                                                  \
-    /* This points at the propName member; walk back to the owning className */                       \
     uintptr_t GetOuterThis() { return reinterpret_cast<uintptr_t>(this) - offsetof(className, propName); } \
                                                                                                            \
     std::add_pointer_t<type> GetPointer()                                                                  \
@@ -173,18 +139,15 @@ namespace schema
                                                                                                            \
 public:                                                                                                    \
     propName##_prop() = default;                                                                           \
-    /* Prevent accidentally copying this wrapper instead of the underlying field */                        \
     propName##_prop(const propName##_prop&) = delete;                                                      \
     propName##_prop& operator=(const propName##_prop&) = delete;                                           \
                                                                                                            \
-    /* Call after writing through the accessor; no-op for fields that are not networked */                 \
     void NetworkStateChanged()                                                                             \
     {                                                                                                      \
         static schema::NetworkInfo_t s_info;                                                               \
         schema::NetworkStateChanged<className>(GetOuterThis(), s_info, #className, #propName);             \
     }
 
-// propName() returns a reference to the field.
 #define SCHEMA_FIELD(type, className, propName)                  \
     class propName##_prop                                        \
     {                                                            \
@@ -196,7 +159,6 @@ public:                                                                         
         }                                                        \
     } propName;
 
-// propName() returns a pointer to the field.
 #define SCHEMA_FIELD_POINTER(type, className, propName)          \
     class propName##_prop                                        \
     {                                                            \
@@ -208,4 +170,4 @@ public:                                                                         
         }                                                        \
     } propName;
 
-#endif // SCHEMASYSTEM_HELPER_H
+#endif

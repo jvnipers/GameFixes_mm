@@ -120,6 +120,5 @@ plugin = builder.Build('AMBuilder', {
   'SdkHelpers': SdkHelpers,
   'sdk_target': SdkHelpers.sdk_targets[0],
   'mms_root': mms_root,
-  'dynlibutils': builder.Build('vendor/dynlibutils/AMBuildScript', {}),
 })
 builder.Build('PackageScript', {'plugin': plugin, 'platform': cxx.target.platform})

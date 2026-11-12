@@ -23,11 +23,6 @@
  * Project: GameFixes_mm
  */
 
-// Touching the bottom of a body of water, the CategorizePosition that follows
-// WaterMove sees ground under the player and treats them as standing on it,
-// and a jump out of the water no longer takes. That one CategorizePosition is
-// skipped after every WaterMove, so the player stays in the water state and
-// can jump out. Moved here from the FUNPLAY gamemode plugins.
 #pragma once
 
 #include "fix.h"
@@ -49,7 +44,7 @@ public:
 
     void OnStartupServer(const GameSessionConfiguration_t& config, const char* pszMapName) override;
 
-public: // Hooks
+public:
     KHook::Return<void> CCSPlayer_MovementServices_WaterMove(CCSPlayer_MovementServices* pThis, CMoveData* pMove);
     KHook::Return<void> CCSPlayer_MovementServices_CategorizePosition(CCSPlayer_MovementServices* pThis, CMoveData* pMove, bool bStayOnGround);
 
@@ -57,9 +52,8 @@ public: // Hooks
     KHook::Member<CCSPlayer_MovementServices, void, CMoveData*, bool>* m_hCategorizePosition = nullptr;
 
 private:
-    // Which slot a movement service belongs to; -1 for anything that is not a player.
+    // -1 for anything that is not a player.
     static int GetSlot(CCSPlayer_MovementServices* pServices);
 
-    // Per slot: WaterMove ran, the next CategorizePosition is to be skipped.
     bool m_bSkipNextCategorize[64] = {};
 };

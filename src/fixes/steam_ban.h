@@ -23,20 +23,6 @@
  * Project: GameFixes_mm
  */
 
-// The engine's per-frame GC ban / competitive cooldown kick pass
-// (GameSystem_Think_CheckSteamBan) walks CCSGameRules::sm_mapGcBanInformation
-// and kicks every connected account it finds there. Hooked by signature, the
-// way CS2Fixes does it: Pre strips the whitelisted accounts out of the map and,
-// below sv_kick_players_with_cooldown 2, the competitive-cooldown entries the
-// pass would still act on; Post clears whatever the pass left in it, so a
-// stale entry can't spread to the next player to join.
-//
-// Besides the whitelist, other plugins allow accounts at runtime through
-// IGameFixes (FUNPLAY: its active admins). An account the pass would act on
-// that nobody allowed yet is held for "hold_seconds" from when it first shows
-// up in the map: the pass is skipped while one is held -- the entry can't be
-// taken out and put back, the map only allows structural access -- and runs as
-// usual once the hold is over.
 #pragma once
 
 #include "fix.h"
@@ -62,41 +48,31 @@ public:
     bool Load(const FixModules& modules, char* error, size_t maxlen) override;
     void Unload() override;
 
-    // IGameFixes: accounts allowed at runtime, on top of the whitelist
     bool AllowAccount(uint64_t steamId64);
     bool DisallowAccount(uint64_t steamId64);
 
-public: // Hooks
+public:
     KHook::Return<void> GameSystem_Think_CheckSteamBan();
     KHook::Return<void> GameSystem_Think_CheckSteamBanPost();
 
-    // void GameSystem_Think_CheckSteamBan(), found by signature.
     KHook::Function<void>* m_hCheckSteamBan = nullptr;
 
 private:
-    // Steam32 account ids ("whitelist", given as SteamID64s) the pass must
-    // never see.
+    // "whitelist", as Steam32 account ids
     std::unordered_set<uint32> m_whitelist;
 
-    // "clear_after_pass": empty the map once the pass ran, so an entry the
-    // engine already acted on never reaches the next player to join.
+    // "clear_after_pass"
     bool m_bClearAfterPass = true;
 
-    // Accounts other plugins allowed (IGameFixes), Steam32 account ids
+    // From IGameFixes, as Steam32 account ids
     std::unordered_set<uint32> m_allowed;
 
-    // "hold_seconds": how long an account no one allowed yet is kept from the
-    // pass after it first shows up in the map; 0 turns holding off
+    // "hold_seconds", 0 = no hold
     std::chrono::duration<float> m_holdTime{15.0f};
     std::unordered_map<uint32, std::chrono::steady_clock::time_point> m_firstSeen;
 
-    // The pass was skipped this frame: its entries stay for the next one
     bool m_bPassSkipped = false;
 
-    // CCSGameRules::sm_mapGcBanInformation, keyed by account id. The third
-    // template argument is deliberately uint32, not a real comparator, to
-    // match the engine's layout -- so only structural, index-based access
-    // (FOR_EACH_MAP / Key / Element / RemoveAt / RemoveAll) is valid on it,
-    // never Find / Insert.
+    // The uint32 third argument matches the engine's layout: index-based access only, never Find / Insert.
     CUtlOrderedMap<uint32, CGcBanInformation_t, uint32>* m_pBanMap = nullptr;
 };

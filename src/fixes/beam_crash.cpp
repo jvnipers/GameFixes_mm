@@ -28,11 +28,7 @@
 #include "utils.hpp"
 #include "vprof.hpp"
 
-#include <dynlibutils/module.hpp>
-
 #include <cstdio>
-
-using namespace DynLibUtils;
 
 CBeamCrashFix::CBeamCrashFix() :
     KHOOK_NEW(m_hSetBeamOrigin, this, &CBeamCrashFix::CBeam_SetBeamOrigin, &CBeamCrashFix::CBeam_SetBeamOriginPost),
@@ -44,26 +40,24 @@ bool CBeamCrashFix::Load(const FixModules& modules, char* error, size_t maxlen)
 {
     // https://github.com/Source2ZE/CS2Fixes/commit/0686a807d790ef22407aa83e33b40bbed6531b51
 
-    // void CBeam::SetBeamOrigin(const Vector* pVecPosition)
-    CMemory pSetBeamOrigin = modules.server.FindPattern(ParseStringPattern(WIN_LINUX("48 89 5C 24 ? 57 48 81 EC ? ? ? ? 48 8B FA 48 8B D9 E8 ? ? ? ? 48 8B CB", "55 48 89 E5 41 54 49 89 F4 53 48 89 FB 48 83 EC ? 0F 1F 80")));
+    void* pSetBeamOrigin = FindPattern(modules.server, WIN_LINUX("48 89 5C 24 ? 57 48 81 EC ? ? ? ? 48 8B FA 48 8B D9 E8 ? ? ? ? 48 8B CB", "55 48 89 E5 41 54 49 89 F4 53 48 89 FB 48 83 EC ? 0F 1F 80"));
     if (!pSetBeamOrigin)
     {
         std::snprintf(error, maxlen, "CBeam::SetBeamOrigin not found");
         return false;
     }
 
-    // void CBeam::SetBeamEndPos(const Vector* pVecPosition)
-    CMemory pSetBeamEndPos = modules.server.FindPattern(ParseStringPattern(WIN_LINUX("48 8B C4 48 89 58 ? 57 48 81 EC ? ? ? ? 0F 29 70 ? 48 8B FA 0F 29 78 ? 48 8B D9", "55 48 89 E5 41 57 41 56 41 55 41 54 49 89 F4 53 48 89 FB 48 81 EC ? ? ? ? 66 0F 1F 44 00")));
+    void* pSetBeamEndPos = FindPattern(modules.server, WIN_LINUX("48 8B C4 48 89 58 ? 57 48 81 EC ? ? ? ? 0F 29 70 ? 48 8B FA 0F 29 78 ? 48 8B D9", "55 48 89 E5 41 57 41 56 41 55 41 54 49 89 F4 53 48 89 FB 48 81 EC ? ? ? ? 66 0F 1F 44 00"));
     if (!pSetBeamEndPos)
     {
         std::snprintf(error, maxlen, "CBeam::SetBeamEndPos not found");
         return false;
     }
 
-    m_hSetBeamOrigin->Configure(pSetBeamOrigin.GetPtr());
-    m_hSetBeamEndPos->Configure(pSetBeamEndPos.GetPtr());
+    m_hSetBeamOrigin->Configure(pSetBeamOrigin);
+    m_hSetBeamEndPos->Configure(pSetBeamEndPos);
 
-    Log("hooked CBeam::SetBeamOrigin (%p) and CBeam::SetBeamEndPos (%p)", pSetBeamOrigin.GetPtr(), pSetBeamEndPos.GetPtr());
+    Log("hooked CBeam::SetBeamOrigin (%p) and CBeam::SetBeamEndPos (%p)", pSetBeamOrigin, pSetBeamEndPos);
     return true;
 }
 
@@ -79,7 +73,7 @@ KHook::Return<void> CBeamCrashFix::CBeam_SetBeamOrigin(CBeam* pThis, const Vecto
 {
     GF_VPROF("GameFixes::beam_crash::SetBeamOrigin");
 
-    // Game code still works for parented beams; without a parent it would loop forever, so it's skipped and finished in Post.
+    // Without a parent the game's code loops forever; Post finishes it.
     if (pThis->m_CBodyComponent()->m_pSceneNode()->m_pParent())
         return { KHook::Action::Ignore };
 
@@ -99,7 +93,6 @@ KHook::Return<void> CBeamCrashFix::CBeam_SetBeamEndPos(CBeam* pThis, const Vecto
 {
     GF_VPROF("GameFixes::beam_crash::SetBeamEndPos");
 
-    // Same as CBeam_SetBeamOrigin.
     if (pThis->m_CBodyComponent()->m_pSceneNode()->m_pParent())
         return { KHook::Action::Ignore };
 

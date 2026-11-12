@@ -23,18 +23,12 @@
  * Project: GameFixes_mm
  */
 
-// With tv_enable 1 the GOTV client is never let go: its
-// CServerSideClient::Disconnect is superseded and the session's maxplayers is
-// raised by one at StartupServer (Pre, so the config is still editable), so
-// the slot is its own and the demo keeps recording across match restarts on
-// the same map.
 #pragma once
 
 #include "fix.h"
 #include "plugin.h"
 #include "utils.hpp"
 
-#include <dynlibutils/virtual.hpp>
 #include <engine2/serversideclientbase.h>
 #include <tier0/convar.h>
 
@@ -52,7 +46,7 @@ public:
 
     void OnStartupServer(const GameSessionConfiguration_t& config, const char* pszMapName) override;
 
-public: // Hooks
+public:
     KHook::Return<void> CServerSideClient_Disconnect(CServerSideClientBase* pThis, ENetworkDisconnectionReason reason, const char* pszInternalReason);
 
     KHook::Virtual<CServerSideClientBase, void, ENetworkDisconnectionReason, const char*>* m_hDisconnect = nullptr;
@@ -60,11 +54,7 @@ public: // Hooks
 private:
     bool IsTvEnabled() const;
 
-    // CServerSideClient's vtable (from libengine2); doubles as the hook's
-    // stand-in object, see AsHookTarget().
-    DynLibUtils::VirtualTable m_VTable;
+    VirtualTable m_VTable;
 
-    // tv_enable; both the disconnect block and the extra slot are no-ops
-    // while it's off.
     std::unique_ptr<CConVarRef<bool>> m_tvEnable;
 };

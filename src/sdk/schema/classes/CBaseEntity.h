@@ -51,4 +51,4 @@ public:
     SCHEMA_FIELD(CEntityHandle, CBaseEntity, m_hGroundEntity);
 };
 
-#endif // _INCLUDE_CBASEENTITY_H
+#endif

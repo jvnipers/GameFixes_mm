@@ -33,22 +33,13 @@
 
 #define GAMEFIXES_INTERFACE_VERSION "IGameFixes001"
 
-// What other plugins can ask of GameFixes, through metamod:
-//
-//   IGameFixes* pGameFixes = static_cast<IGameFixes*>(g_SMAPI->MetaFactory(GAMEFIXES_INTERFACE_VERSION, nullptr, nullptr));
-//
-// A call to a fix that is off (or failed to load) does nothing and returns false.
+// From another plugin: g_SMAPI->MetaFactory(GAMEFIXES_INTERFACE_VERSION, nullptr, nullptr). A call to a fix that is off returns false.
 class IGameFixes
 {
 public:
-	// steam_ban: the engine's GC ban / competitive cooldown kick (game bans,
-	// VAC Live, cooldowns) leaves this account alone, like the whitelist in
-	// game_fixes.ini, until DisallowAccount or a plugin reload. An account the
-	// engine wants kicked is held for "hold_seconds" first, so a plugin that
-	// learns who the player is a moment after they connect (an admin list over
-	// HTTP) can still allow them in time.
+	// An account the engine wants kicked is held for "hold_seconds" first, so it can still be allowed right after it connects.
 	virtual bool SteamBanAllowAccount(uint64_t steamId64) = 0;
 	virtual bool SteamBanDisallowAccount(uint64_t steamId64) = 0;
 };
 
-#endif // _INCLUDE_GAMEFIXES_IFACE_H_
+#endif

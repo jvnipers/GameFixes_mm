@@ -44,7 +44,6 @@
 #include "utils.hpp"
 #include "vprof.hpp"
 
-#include <dynlibutils/module.hpp>
 #include <entitysystem.h>
 #include <interfaces/interfaces.h>
 #include <tier0/buffer_string.h>
@@ -56,13 +55,11 @@
 #define VERSION_STRING SEMVER " @ " GITHUB_SHA
 #define BUILD_TIMESTAMP __DATE__ " " __TIME__
 
-using namespace DynLibUtils;
-
 Plugin g_Plugin;
 PLUGIN_EXPOSE(Plugin, g_Plugin);
 
 Plugin::Plugin() :
-    // GameFrame Post: the fixes only read the frame. StartupServer Pre: demo_record edits the session's maxplayers before the engine reads it.
+    // StartupServer Pre: demo_record edits the session's maxplayers before the engine reads it.
     KHOOK_NEW(m_hGameFrame, &ISource2Server::GameFrame, this, nullptr, &Plugin::CSource2Server_GameFrame),
     KHOOK_NEW(m_hStartupServer, &INetworkServerService::StartupServer, this, &Plugin::INetworkServerService_StartupServer, nullptr),
     KHOOK_NEW(m_hLoadEventsFromFile, &IGameEventManager2::LoadEventsFromFile, this, nullptr, &Plugin::CGameEventManager_LoadEventsFromFile)
@@ -82,12 +79,10 @@ bool Plugin::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, bool l
     GET_V_IFACE_CURRENT(GetEngineFactory, g_pNetworkServerService, INetworkServerService, NETWORKSERVERSERVICE_INTERFACE_VERSION);
     GET_V_IFACE_CURRENT(GetFileSystemFactory, g_pFullFileSystem, IFileSystem, FILESYSTEM_INTERFACE_VERSION);
 
-    CModule libserver(g_pSource2Server);
-    CModule libengine(g_pEngineServer);
-    const FixModules modules{libserver, libengine};
+    const FixModules modules{g_pSource2Server, g_pEngineServer};
 
     // Resolved before anything is installed: AddGlobal on a null vtable would crash.
-    m_GameEventManagerVTable.m_pVTFs = libserver.GetVirtualTableByName("CGameEventManager").RCast<void**>();
+    m_GameEventManagerVTable.m_pVTFs = static_cast<void**>(sig::FindVirtualTable(g_pSource2Server, "CGameEventManager"));
     if (!m_GameEventManagerVTable.m_pVTFs)
     {
         std::snprintf(error, maxlen, "CGameEventManager vtable not found");
@@ -216,7 +211,6 @@ bool Plugin::LoadFixes(const FixModules& modules, char* error, size_t maxlen)
         if (!pBlock || !pBlock->GetBool("enable"))
         {
             META_LOG(this, "%s: disabled\n", fix->GetName());
-            // Its KHook objects were made in the constructor and only Unload deletes them.
             fix->Unload();
             continue;
         }
@@ -276,8 +270,6 @@ bool Plugin::SteamBanDisallowAccount(uint64_t steamId64)
     auto* pFix = static_cast<CSteamBanFix*>(FindFix("steam_ban"));
     return pFix && pFix->DisallowAccount(steamId64);
 }
-
-///////////////////////////////////////
 
 const char* Plugin::GetLicense() { return "GPLv3"; }
 const char* Plugin::GetVersion() { return VERSION_STRING; }

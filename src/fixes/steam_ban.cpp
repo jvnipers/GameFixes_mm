@@ -28,7 +28,6 @@
 #include "utils.hpp"
 #include "vprof.hpp"
 
-#include <dynlibutils/module.hpp>
 #include <steam/steamclientpublic.h>
 #include <tier0/convar.h>
 #include <tier0/keyvalues.h>
@@ -37,8 +36,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
-
-using namespace DynLibUtils;
 
 CSteamBanFix::CSteamBanFix() :
     KHOOK_NEW(m_hCheckSteamBan, this, &CSteamBanFix::GameSystem_Think_CheckSteamBan, &CSteamBanFix::GameSystem_Think_CheckSteamBanPost)
@@ -71,33 +68,28 @@ void CSteamBanFix::ReadConfig(KeyValues* pConfig)
 
 bool CSteamBanFix::Load(const FixModules& modules, char* error, size_t maxlen)
 {
-    // After https://github.com/Source2ZE/CS2Fixes/commit/c82d21ae36588520391b301ed02bfb851dff18e1,
-    // plus the whitelist.
+    // https://github.com/Source2ZE/CS2Fixes/commit/c82d21ae36588520391b301ed02bfb851dff18e1
 
-    // lea reg, [rip + sm_mapGcBanInformation] inside CCSGameRules; the map
-    // is the rip-relative operand.
-    // Location to CUtlMap unk that is referenced on Windows by function with "Notification about user penalty: %u/%u (%u sec)\n" string
-    // On Linux, a qword appears twice in GameSystem_Think_CheckSteamBan, and thrice in a sub-function of the function used for Windows (1 top, 2 bottom), the only other reference to this qword is some convar registration function with two unks above, sm_mapGcBanInformation is the unk further away
-    CMemory pMapRef = modules.server.FindPattern(ParseStringPattern(WIN_LINUX("48 8D 0D ? ? ? ? 45 33 C0 4C 89 74 24", "48 8D 35 ? ? ? ? 89 C2 48 63 46")));
+    // lea reg, [rip + CCSGameRules::sm_mapGcBanInformation]
+    void* pMapRef = FindPattern(modules.server, WIN_LINUX("48 8D 0D ? ? ? ? 45 33 C0 4C 89 74 24", "48 8D 35 ? ? ? ? 89 C2 48 63 46"));
     if (!pMapRef)
     {
         std::snprintf(error, maxlen, "CCSGameRules::sm_mapGcBanInformation not found");
         return false;
     }
 
-    m_pBanMap = pMapRef.ResolveRelativeAddress(3, 7).RCast<decltype(m_pBanMap)>();
+    m_pBanMap = static_cast<decltype(m_pBanMap)>(sig::ResolveRipRelative(pMapRef));
 
-    // void GameSystem_Think_CheckSteamBan()
-    CMemory pCheckSteamBan = modules.server.FindPattern(ParseStringPattern(WIN_LINUX("41 54 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 44 8B 60 58", "55 48 89 E5 41 57 41 56 41 55 41 54 53 48 83 EC ? 48 8B 05 ? ? ? ? 44 8B 68 ? 45 85 ED 0F 8E ? ? ? ? 8B 15")));
+    void* pCheckSteamBan = FindPattern(modules.server, WIN_LINUX("41 54 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 44 8B 60 58", "55 48 89 E5 41 57 41 56 41 55 41 54 53 48 83 EC ? 48 8B 05 ? ? ? ? 44 8B 68 ? 45 85 ED 0F 8E ? ? ? ? 8B 15"));
     if (!pCheckSteamBan)
     {
         std::snprintf(error, maxlen, "GameSystem_Think_CheckSteamBan not found");
         return false;
     }
 
-    m_hCheckSteamBan->Configure(pCheckSteamBan.GetPtr());
+    m_hCheckSteamBan->Configure(pCheckSteamBan);
 
-    Log("hooked GameSystem_Think_CheckSteamBan (%p), ban map at %p, %zu whitelisted account(s), clear after pass %s, hold %.0f s", pCheckSteamBan.GetPtr(), m_pBanMap, m_whitelist.size(), m_bClearAfterPass ? "on" : "off", m_holdTime.count());
+    Log("hooked GameSystem_Think_CheckSteamBan (%p), ban map at %p, %zu whitelisted account(s), clear after pass %s, hold %.0f s", pCheckSteamBan, m_pBanMap, m_whitelist.size(), m_bClearAfterPass ? "on" : "off", m_holdTime.count());
     return true;
 }
 
@@ -137,9 +129,7 @@ KHook::Return<void> CSteamBanFix::GameSystem_Think_CheckSteamBan()
         return { KHook::Action::Ignore };
     }
 
-    // Below sv_kick_players_with_cooldown 2 the pass still acts on competitive
-    // cooldowns (reasons 20, 22 and 23); those entries go the same way as the
-    // whitelisted accounts, before the pass gets to see them.
+    // Below sv_kick_players_with_cooldown 2 the pass still acts on competitive cooldowns (reasons 20, 22 and 23).
     static ConVarRefAbstract sv_kick_players_with_cooldown("sv_kick_players_with_cooldown");
     const bool bDropCooldowns = sv_kick_players_with_cooldown.IsValidRef() && sv_kick_players_with_cooldown.GetInt() < 2;
 
@@ -161,7 +151,7 @@ KHook::Return<void> CSteamBanFix::GameSystem_Think_CheckSteamBan()
     if (m_holdTime.count() <= 0.0f)
         return { KHook::Action::Ignore };
 
-    // What is left would be kicked: hold it while it's new, in case a plugin allows it in time
+    // Hold what would be kicked while it's new, in case a plugin allows it in time.
     const auto now = std::chrono::steady_clock::now();
     bool bHold = false;
     std::unordered_set<uint32> inMap;
@@ -186,15 +176,13 @@ KHook::Return<void> CSteamBanFix::GameSystem_Think_CheckSteamBanPost()
 {
     GF_VPROF("GameFixes::steam_ban::CheckSteamBanPost");
 
-    // Skipped while an account is held: its entries wait for the next frame
     if (m_bPassSkipped)
     {
         m_bPassSkipped = false;
         return { KHook::Action::Ignore };
     }
 
-    // Whoever the pass wanted kicked has been kicked by now; the rest of the map
-    // is stale and must not survive to the next frame. (Shared by @aiolos1045.)
+    // The rest is stale and must not reach the next player to join (shared by @aiolos1045).
     if (m_bClearAfterPass && m_pBanMap && m_pBanMap->Count() > 0)
         m_pBanMap->RemoveAll();
 

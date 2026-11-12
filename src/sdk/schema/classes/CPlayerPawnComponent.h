@@ -40,4 +40,4 @@ public:
     CBasePlayerPawn* GetPawn() { return __m_pChainEntity(); }
 };
 
-#endif // _INCLUDE_CPLAYERPAWNCOMPONENT_H
+#endif

@@ -23,20 +23,6 @@
  * Project: GameFixes_mm
  */
 
-// Surf ramps: a movement trace that stops a hair short of a ramp, or lands on
-// its edge, hands TryPlayerMove a plane the player never really hit, and the
-// player is flung off -- a rampbug. Every trace of the pass is redone from a
-// small offset along the last plane the player was known to be on, and a
-// result the game then mangles is put back where it belongs; CategorizePosition
-// gets the same treatment on the way down a ramp. CS2KZ's fix, as carried by
-// CS2Fixes-RampbugFix (github.com/Interesting-exe/CS2Fixes-RampbugFix). It
-// lessens rampbugs, it does not end them.
-//
-// The game's own TryPlayerMove now pushes the end point off a single hit plane
-// (Valve's own mitigation), so putting our walk back over the game's
-// ("tryplayermove_override") is off by default; the walk still runs, for the
-// last valid plane CategorizePosition works with. What a player was on is
-// forgotten when the game moves them outside the pass (a teleport).
 #pragma once
 
 #include "fix.h"
@@ -49,7 +35,6 @@
 
 class CBasePlayerPawn;
 class CCSPlayer_MovementServices;
-// The player's bounds; s2sdk dropped the bbox_t eiface.h used to have.
 struct PlayerBounds_t
 {
     Vector mins;
@@ -69,7 +54,7 @@ public:
 
     void OnStartupServer(const GameSessionConfiguration_t& config, const char* pszMapName) override;
 
-public: // Hooks
+public:
     KHook::Return<void> CCSPlayer_MovementServices_ProcessMovement(CCSPlayer_MovementServices* pThis, void* pMove);
     KHook::Return<void> CCSPlayer_MovementServices_ProcessMovementPost(CCSPlayer_MovementServices* pThis, void* pMove);
     KHook::Return<void> CCSPlayer_MovementServices_TryPlayerMove(CCSPlayer_MovementServices* pThis, CMoveData* pMove, Vector* pFirstDest, trace_t* pFirstTrace, bool* pIsSurfing);
@@ -81,15 +66,14 @@ public: // Hooks
     KHook::Member<CCSPlayer_MovementServices, void, CMoveData*, bool>* m_hCategorizePosition = nullptr;
 
 private:
-    // What one player's movement pass left behind, from one call to the next.
     struct PlayerState
     {
         CMoveData* pMoveData = nullptr;       // the pass in flight, null outside ProcessMovement
         bool bProcessingMovement = false;
         bool bPreviousOnGround = false;
         int nGameCodeMoves = 0;               // m_nGameCodeHasMovedPlayerAfterCommand last seen
-        bool bDidTPM = false;                 // TryPlayerMove ran during this pass
-        bool bOverrideTPM = false;            // our own trace result should replace the game's
+        bool bDidTPM = false;
+        bool bOverrideTPM = false;
         Vector vecTPMVelocity;                // vec3_invalid until TryPlayerMove ran
         Vector vecTPMOrigin;
         Vector vecLastValidPlane;             // vec3_origin when there is none
@@ -98,18 +82,16 @@ private:
         Vector vecLandingVelocity;
 
         void Reset();
-        // Forgets what the player was on, keeping the pass in flight
+        // Keeps the pass in flight.
         void ForgetSurface();
     };
 
-    // "tryplayermove_override": put our own walk back when the game's moved the player elsewhere
+    // "tryplayermove_override"
     bool m_bOverrideTryPlayerMove = false;
 
-    // The state of the pawn a movement service belongs to; null for anything that is not a player.
+    // Null for anything that is not a player.
     PlayerState* GetState(CCSPlayer_MovementServices* pServices, CBasePlayerPawn** ppPawn);
 
-    // The player's origin and velocity as the pass sees them: the move data while a
-    // pass is in flight, the pawn otherwise.
     static void GetOrigin(const PlayerState& state, CBasePlayerPawn* pPawn, Vector& vecOut);
     static void GetVelocity(const PlayerState& state, CBasePlayerPawn* pPawn, Vector& vecOut);
     static void SetOrigin(PlayerState& state, CBasePlayerPawn* pPawn, const Vector& vecOrigin);
@@ -120,8 +102,7 @@ private:
     void ApplySlopeFix(PlayerState& state, CBasePlayerPawn* pPawn);
     bool IsValidMovementTrace(trace_t& trace, const PlayerBounds_t& bounds, CTraceFilter* pFilter);
 
-    // The engine's own TracePlayerBBox is gone; the player box is traced
-    // through CNavPhysicsInterface::Nav_TraceShape, as cs2kz does.
+    // Through CNavPhysicsInterface::Nav_TraceShape, as cs2kz does: the engine's own is gone.
     void TracePlayerBBox(const Vector& start, const Vector& end, const PlayerBounds_t& bounds, CTraceFilter* pFilter, trace_t& pm);
     void* m_pNavPhysicsVTable = nullptr;
 

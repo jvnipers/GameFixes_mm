@@ -23,14 +23,6 @@
  * Project: GameFixes_mm
  */
 
-// A join is refused as "team full" once a team has as many players as the
-// smaller of CCSGameRules' m_iMaxNum<team> and m_iSpawnPointCount_<team>, the
-// number of enabled spawn points for it. The game sets the first at level init
-// and recounts the second whenever a spawn point is created, enabled or
-// disabled -- maps do that mid-round -- so both are raised to maxplayers every
-// frame, when they are below it. Players beyond the map's spawn points share
-// them. m_iNumSpawnable<team> are live player counts the game balances teams
-// with, and are left alone.
 #pragma once
 
 #include "fix.h"
@@ -50,6 +42,5 @@ public:
 private:
     CCSGameRules* GetGameRules();
 
-    // cs_gamerules' rules object, looked up once per map.
     CCSGameRules* m_pGameRules = nullptr;
 };

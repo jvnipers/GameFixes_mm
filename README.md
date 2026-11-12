@@ -1,91 +1,40 @@
 # GameFixes_mm
 
 > [!IMPORTANT]
-> **Archived.** This Metamod plugin is no longer maintained: it continues on
-> [Source2Mod](https://www.source2mod.net) as [GameFixes_s2m](https://github.com/SlynxCZ/GameFixes_s2m),
-> with the same fixes (and `cstv_bot_quota`) on the core's own hooks, config and gamedata.
-> What is described below still holds for the fixes themselves.
+> **Forked**. Original by [SlynxCZ/GameFixes_mm](https://github.com/SlynxCZ/GameFixes_mm)
+> Also see the [Source2Mod](https://www.source2mod.net) version [GameFixes_s2m](https://github.com/SlynxCZ/GameFixes_s2m).
 
-**One Metamod:Source plugin for the CS2 server fixes that used to be four separate ones (BeamCrashFix, DemoRecordFix, HammerIdFix, SlowAnimationFix), the GC-ban whitelist that used to live in FUNPLAY Core, and a few more (team limit, input activator crash, sv_cheats noclip, server list players).** Every fix is toggled in `game_fixes.ini`.
-
----
+Metamod:Source plugin with CS2 server fixes.
+Each is a block in `addons/game_fixes/game_fixes.ini`, on with `"enable" "1"`; a missing block is off.
+A fix that can't find what it needs is logged and left off.
 
 ## Fixes
 
-| Block | What it fixes |
-|---|---|
-| `beam_crash` | `CBeam::SetBeamOrigin` / `SetBeamEndPos` loop forever on a beam without a parent, crashing the server. The unparented path is reimplemented. |
-| `demo_record` | With `tv_enable 1`, the GOTV client is never disconnected and gets a slot on top of the session's maxplayers, so demo recording survives match restarts on the same map. |
-| `hammer_id` | `SetSchemaHammerUniqueId` skips `m_sUniqueHammerID` behind a `jnz`; patched to `jmp` so every entity gets its id. |
-| `slow_animation` | `curtime` is a 32-bit float and loses precision after a day or two on one map (sluggish animations, movement, lag compensation). While the server is empty at a check, the map is reloaded; the remaining `mp_timelimit` is carried over. `reload_interval` sets the check period in seconds. |
-| `steam_ban` | The engine's per-frame GC ban / competitive cooldown kick pass (`GameSystem_Think_CheckSteamBan`, hooked by signature). Accounts in `whitelist` (SteamID64s) are stripped out before it runs, so are competitive cooldowns while `sv_kick_players_with_cooldown` is below 2, and with `clear_after_pass` whatever it leaves behind is cleared so a stale entry can't hit the next player to join. Other plugins allow accounts at runtime through `IGameFixes` (below); an account nobody allowed yet is held for `hold_seconds` before the pass may kick it. |
-| `team_limit` | `CCSGameRules`' max T/CT counts and enabled spawn point counts are kept at maxplayers every frame, so a join is never refused because a team is "full", also on maps with few spawns. |
-| `input_activator_crash` | `CBaseFilter::InputTestActivator` dereferences the input's activator unchecked; a `TestActivator` fired with none crashes the server. Those calls are dropped. |
-| `sv_cheats` | Turning `sv_cheats` off leaves anyone in noclip flying. Every such pawn goes back to `MOVETYPE_WALK` the moment the cvar flips to 0. |
-| `rampbug` | Surf ramps: a movement trace that stops short of a ramp or lands on its edge feeds `TryPlayerMove` a plane the player never hit, and they are flung off. The traces are redone from a small offset along the last valid plane and, with `tryplayermove_override` (off by default, the game has its own mitigation now), a bad result is put back (CS2KZ's fix, via CS2Fixes-RampbugFix). What a player was on is forgotten on a teleport. Lessens rampbugs, does not end them. |
-| `water_jump` | Touching the bottom of a body of water, the `CategorizePosition` after `WaterMove` counts the player as standing on it and a jump out of the water no longer takes. That one call is skipped. |
-| `voice_flood` | Malformed (`clc_VoiceData` with no audio, a sender other than the client, an unknown format, packets with no data) or oversized voice messages -- over 16 KiB or 64 packets -- are dropped in `CServerSideClient::ProcessVoiceData` before the engine handles them, and every client is held to 192 messages, 256 KiB and 1024 packets per second. Nobody is kicked. |
-| `server_list_players` | Pushes every connected player's SteamID, name and score to the Steam game server API every `update_interval` seconds, so the server browser lists the players. Port of [Source2ZE/ServerListPlayersFix](https://github.com/Source2ZE/ServerListPlayersFix). |
-
-A fix that fails to find what it needs (a signature, a vtable) is logged and left off; the rest of the plugin still loads.
-
-## Configuration
-
-`addons/game_fixes/game_fixes.ini` -- one block per fix, `"enable" "1"` turns it on, a missing block counts as off. Extra options live in the same block:
-
-```jsonc
-"slow_animation"
-{
-    "enable"          "1"
-    "reload_interval" "1800"
-}
-
-"steam_ban"
-{
-    "enable"           "1"
-    "clear_after_pass" "1"
-    "hold_seconds"     "15"
-    "whitelist"
-    {
-        "Slynx" "76561198000000000"
-    }
-}
-```
+| Block | Fixes |
+| --- | --- |
+| `abstract_entity` | Creating an entity whose class can't be constructed (`weapon_cs_base` in old map ports) crashes; such classnames are refused like unknown ones. |
+| `beam_crash` | `CBeam::SetBeamOrigin` / `SetBeamEndPos` loop forever on a beam without a parent. |
+| `demo_record` | With `tv_enable 1`, GOTV gets its own slot and is never disconnected, so recording survives match restarts. |
+| `hammer_id` | `SetSchemaHammerUniqueId` skips `m_sUniqueHammerID` on most entities. |
+| `slow_animation` | `curtime` loses precision after a day or two on one map; the map is reloaded while the server is empty, keeping `mp_timelimit`. |
+| `steam_ban` | The engine's GC ban / cooldown kick spares `whitelist` accounts and those other plugins allow (`IGameFixes`), holding a new one for `hold_seconds`; `clear_after_pass` drops stale entries. |
+| `team_limit` | Joins are never refused as "team full", also on maps with few spawns. Autobalance is untouched. |
+| `input_activator_crash` | A `TestActivator` input without an activator crashes the server. |
+| `sv_cheats` | Turning `sv_cheats` off leaves noclip on. |
+| `rampbug` | Lessens surf rampbugs (CS2KZ's fix, via CS2Fixes-RampbugFix). |
+| `water_jump` | A jump out of water fails after touching its bottom. |
+| `voice_flood` | Malformed or oversized voice messages; each client's voice rate is capped. Nobody is kicked. |
+| `server_list_players` | The server browser lists no players ([Source2ZE/ServerListPlayersFix](https://github.com/Source2ZE/ServerListPlayersFix)). |
 
 ## Interface for other plugins
 
-`public/IGameFixes.h` (`IGameFixes001`), through metamod:
-
 ```cpp
 IGameFixes* pGameFixes = static_cast<IGameFixes*>(g_SMAPI->MetaFactory(GAMEFIXES_INTERFACE_VERSION, nullptr, nullptr));
-pGameFixes->SteamBanAllowAccount(steamId64);    // steam_ban leaves the account alone
+pGameFixes->SteamBanAllowAccount(steamId64);
 pGameFixes->SteamBanDisallowAccount(steamId64);
 ```
 
-A call to a fix that is off does nothing and returns false.
-
-## Layout
-
-```txt
-public/
-  IGameFixes.h      what other plugins can call
-src/
-  plugin.*          metamod glue: interfaces, ini, the shared GameFrame/StartupServer hooks
-  scheduler.*       timers + next-frame queue, ticked from GameFrame
-  utils.hpp         WIN_LINUX and WriteCode, the one code-byte patch (on DynLibUtils)
-  vprof.hpp         GF_VPROF, the profiler scope every hook handler and timer callback opens
-  fixes/fix.h       the CFix interface every fix implements
-  fixes/<name>.*    one fix per file pair
-  sdk/              schema field access and the few SDK classes the fixes touch
-```
-
-Hooks go through KHook, metamod's own detour library (`third_party/khook` in metamod-source, handed to the plugin by `PLUGIN_SAVEVARS()`), so they share one detour backend with every other plugin. Signature scanning and vtable lookup use `vendor/dynlibutils`.
-
-Every handler shows up in the engine's profiler as `GameFixes::<fix>::<function>`, under the `GameFixes` budget group: `vprof_on`, let it run, `vprof_generate_report`, `vprof_off` (the commands are development-only, so something has to unlock them first).
-
 ## Building
-
-alliedmodders/s2sdk (`cs2` branch) and Metamod:Source are submodules; the game protobufs are generated from s2sdk's own `.proto` files. AMBuild, what CI uses (the `ghcr.io/femboykz/build-containers` images on Linux, MSVC on Windows):
 
 ```bash
 git submodule update --init --recursive
@@ -94,11 +43,7 @@ python ../configure.py --enable-optimize
 ambuild
 ```
 
-The package lands in `build/package/cs2/`; add `configs/addons/game_fixes/game_fixes.ini` next to it.
-
-## Requirements
-
-* Metamod:Source (CS2)
+The package lands in `build/package/cs2/`.
 
 ## Author
 

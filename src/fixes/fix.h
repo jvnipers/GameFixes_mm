@@ -23,7 +23,6 @@
  * Project: GameFixes_mm
  */
 
-// What every fix looks like to the plugin.
 #pragma once
 
 #include <cstddef>
@@ -32,13 +31,11 @@ class KeyValues;
 class GameSessionConfiguration_t;
 class IGameEventManager2;
 
-namespace DynLibUtils { class CModule; }
-
-// The game modules a fix may need to scan, resolved once by the plugin.
+// Any pointer inside each module.
 struct FixModules
 {
-    DynLibUtils::CModule& server;
-    DynLibUtils::CModule& engine;
+    const void* server;
+    const void* engine;
 };
 
 class CFix
@@ -46,33 +43,23 @@ class CFix
 public:
     virtual ~CFix() = default;
 
-    // Key of this fix's block in game_fixes.ini; also its prefix in the log.
+    // The fix's game_fixes.ini block and log prefix.
     virtual const char* GetName() const = 0;
 
-    // Reads the fix's own options from its ini block. Only called when the
-    // block has "enable" "1", right before Load().
+    // Only for an enabled block, right before Load().
     virtual void ReadConfig(KeyValues* pConfig) {}
 
-    // Installs the fix. On failure, writes why into error and returns false;
-    // the plugin logs it, calls Unload() and leaves just this fix off, the
-    // others still load. KHook hooks only come down in their destructor, so
-    // a fix owns them through plain pointers and deletes them in Unload().
-    // Unload() also runs, without Load(), for a fix disabled in the ini, so it
-    // must cope with whatever Load() left unset.
+    // KHook hooks come down only in their destructor: own them by pointer and delete them in Unload(), which also runs for a fix that never loaded.
     virtual bool Load(const FixModules& modules, char* error, size_t maxlen) = 0;
     virtual void Unload() {}
 
-    // Forwarded from the plugin's own engine hooks (one shared hook each).
     // StartupServer is Pre, so config is still editable.
     virtual void OnStartupServer(const GameSessionConfiguration_t& config, const char* pszMapName) {}
     virtual void OnGameFrame(bool simulating) {}
 
-    // Once, when the game's event manager shows up (its first
-    // LoadEventsFromFile, so the game's own events are registered by then) --
-    // the place to AddListener().
+    // After the game registered its own events: the place to AddListener().
     virtual void OnGameEventManagerReady(IGameEventManager2* pManager) {}
 
 protected:
-    // "<name>: <message>" through metamod's logger.
     void Log(const char* pszFormat, ...) const;
 };

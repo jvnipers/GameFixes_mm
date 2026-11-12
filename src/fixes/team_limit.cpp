@@ -40,7 +40,6 @@
 
 bool CTeamLimitFix::Load(const FixModules& modules, char* error, size_t maxlen)
 {
-    // Nothing to resolve; the rules object is looked up in the first frame of a map.
     return true;
 }
 
@@ -51,7 +50,6 @@ void CTeamLimitFix::Unload()
 
 void CTeamLimitFix::OnStartupServer(const GameSessionConfiguration_t& config, const char* pszMapName)
 {
-    // New map, new cs_gamerules.
     m_pGameRules = nullptr;
 }
 
@@ -86,7 +84,6 @@ CCSGameRules* CTeamLimitFix::GetGameRules()
     if (!pEntitySystem)
         return nullptr;
 
-    // The rules object hangs off the one cs_gamerules entity; walk the active entity list for it.
     for (CEntityIdentity* pIdentity = pEntitySystem->m_EntityList.m_pFirstActiveEntity; pIdentity; pIdentity = pIdentity->m_pNext)
     {
         if (!pIdentity->m_pInstance || V_strcmp(pIdentity->GetClassname(), "cs_gamerules") != 0)

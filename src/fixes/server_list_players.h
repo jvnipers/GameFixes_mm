@@ -23,10 +23,6 @@
  * Project: GameFixes_mm
  */
 
-// The server browser lists a server's players from what the game server
-// reported to the Steam API, and CS2 reports nothing. Every update_interval
-// seconds, every connected player's SteamID, name and score is pushed through
-// ISteamGameServer::BUpdateUserData (Source2ZE/ServerListPlayersFix).
 #pragma once
 
 #include "fix.h"
@@ -47,7 +43,7 @@ public:
     bool Load(const FixModules& modules, char* error, size_t maxlen) override;
     void Unload() override;
 
-public: // Hooks
+public:
     KHook::Return<void> CSource2Server_GameServerSteamAPIActivated(ISource2Server* pThis);
     KHook::Return<void> CSource2Server_GameServerSteamAPIDeactivated(ISource2Server* pThis);
 
@@ -57,10 +53,9 @@ public: // Hooks
 private:
     void UpdatePlayers();
 
-    // Seconds between pushes ("update_interval").
+    // "update_interval", seconds
     float m_flUpdateInterval = 5.0f;
     Timer* m_pUpdateTimer = nullptr;
 
-    // The game server's Steam API, usable from GameServerSteamAPIActivated on.
     bool m_bSteamAPIReady = false;
 };

@@ -23,10 +23,6 @@
  * Project: GameFixes_mm
  */
 
-// CBeam::SetBeamOrigin / CBeam::SetBeamEndPos loop forever on a beam without
-// a parent -- an easy way for a map to crash the server. Pre supersedes that
-// path, Post does the one assignment the original would have made; parented
-// beams go through the game code untouched.
 #pragma once
 
 #include "fix.h"
@@ -43,7 +39,7 @@ public:
     bool Load(const FixModules& modules, char* error, size_t maxlen) override;
     void Unload() override;
 
-public: // Hooks
+public:
     KHook::Return<void> CBeam_SetBeamOrigin(CBeam* pThis, const Vector* pVecPosition);
     KHook::Return<void> CBeam_SetBeamOriginPost(CBeam* pThis, const Vector* pVecPosition);
     KHook::Return<void> CBeam_SetBeamEndPos(CBeam* pThis, const Vector* pVecPosition);

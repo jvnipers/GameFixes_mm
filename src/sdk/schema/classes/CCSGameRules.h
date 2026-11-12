@@ -40,4 +40,4 @@ public:
     SCHEMA_FIELD(int32_t, CCSGameRules, m_iSpawnPointCount_CT);
 };
 
-#endif // _INCLUDE_CCSGAMERULES_H
+#endif

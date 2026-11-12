@@ -27,11 +27,7 @@
 
 #include "utils.hpp"
 
-#include <dynlibutils/module.hpp>
-
 #include <cstdio>
-
-using namespace DynLibUtils;
 
 static constexpr uint8_t OPCODE_JMP_REL8 = 0xEB;
 
@@ -40,17 +36,17 @@ bool CHammerIdFix::Load(const FixModules& modules, char* error, size_t maxlen)
     // https://github.com/Source2ZE/CS2Fixes/commit/61937f78dd649ed391f6988b0c58ae4a75fd4bc6
 
     // The pattern starts on the jnz itself (75 ?); one byte turns it into a jmp.
-    m_pJnz = modules.server.FindPattern(ParseStringPattern(WIN_LINUX("75 ? 48 8B 03 48 8B CB FF 90 ? ? ? ? 84 C0 74 ? 48 8D 05", "75 ? 48 8B 03 48 89 DF FF 90 ? ? ? ? 84 C0 74 ? 48 8D 05")));
+    m_pJnz = FindPattern(modules.server, WIN_LINUX("75 ? 48 8B 03 48 8B CB FF 90 ? ? ? ? 84 C0 74 ? 48 8D 05", "75 ? 48 8B 03 48 89 DF FF 90 ? ? ? ? 84 C0 74 ? 48 8D 05"));
     if (!m_pJnz)
     {
         std::snprintf(error, maxlen, "SetSchemaHammerUniqueId not found");
         return false;
     }
 
-    m_uOriginalByte = *m_pJnz.RCast<const uint8_t*>();
+    m_uOriginalByte = *static_cast<const uint8_t*>(m_pJnz);
     WriteCode(m_pJnz, &OPCODE_JMP_REL8, sizeof(OPCODE_JMP_REL8));
 
-    Log("patched SetSchemaHammerUniqueId at %p (jnz -> jmp)", m_pJnz.GetPtr());
+    Log("patched SetSchemaHammerUniqueId at %p (jnz -> jmp)", m_pJnz);
     return true;
 }
 
@@ -60,5 +56,5 @@ void CHammerIdFix::Unload()
         return;
 
     WriteCode(m_pJnz, &m_uOriginalByte, sizeof(m_uOriginalByte));
-    m_pJnz = CMemory();
+    m_pJnz = nullptr;
 }

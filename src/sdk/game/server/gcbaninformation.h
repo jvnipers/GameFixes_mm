@@ -39,4 +39,4 @@ struct CGcBanInformation_t
     uint32 m_uiAccountId;
 };
 
-#endif // GCBANINFORMATION_H
+#endif

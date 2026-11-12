@@ -1,7 +1,3 @@
-[submodule "vendor/dynlibutils"]
-	path = vendor/dynlibutils
-	url = https://github.com/SlynxCZ/DynLibUtils.git
-	branch = main
 [submodule "s2sdk"]
 	path = s2sdk
 	url = https://github.com/alliedmodders/s2sdk

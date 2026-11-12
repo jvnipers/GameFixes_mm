@@ -27,23 +27,16 @@
 
 #include "vprof.hpp"
 
-#include <dynlibutils/module.hpp>
-
 #include <algorithm>
 #include <cstdio>
 #include <limits>
 
-using namespace DynLibUtils;
-
-// One message: voice_data, the serialized message, and its cost (the
-// serialized size plus 4 bytes per packet) are each held to 16 KiB, and it
-// may carry at most 64 packets.
+// A message cost is its serialized size plus 4 bytes per packet.
 static constexpr size_t kMaxVoiceDataBytes = 16384;
 static constexpr size_t kMaxMessageBytes = 16384;
 static constexpr uint32_t kMaxPacketsPerMessage = 64;
 static constexpr size_t kBytesPerPacket = 4;
 
-// The rolling budget, per client, over the last second.
 static constexpr auto kBudgetWindow = std::chrono::seconds(1);
 static constexpr size_t kMaxMessagesPerWindow = 192;
 static constexpr size_t kMaxCostPerWindow = 256 * 1024;
@@ -56,18 +49,17 @@ CVoiceFloodFix::CVoiceFloodFix() :
 
 bool CVoiceFloodFix::Load(const FixModules& modules, char* error, size_t maxlen)
 {
-    // An engine class with no interface to fetch and no instance at load time; the vtable is resolved by name and the hook covers every client sharing it.
-    CMemory pVTable = modules.engine.GetVirtualTableByName("CServerSideClient");
+    void* pVTable = sig::FindVirtualTable(modules.engine, "CServerSideClient");
     if (!pVTable)
     {
         std::snprintf(error, maxlen, "CServerSideClient vtable not found");
         return false;
     }
 
-    m_VTable.m_pVTFs = pVTable.RCast<void**>();
+    m_VTable.m_pVTFs = static_cast<void**>(pVTable);
     m_hProcessVoiceData->AddGlobal(AsHookTarget<CServerSideClientBase>(m_VTable));
 
-    Log("hooked CServerSideClient::ProcessVoiceData on vtable %p", pVTable.GetPtr());
+    Log("hooked CServerSideClient::ProcessVoiceData on vtable %p", pVTable);
     return true;
 }
 
@@ -107,14 +99,12 @@ KHook::Return<bool> CVoiceFloodFix::CServerSideClient_ProcessVoiceData(CServerSi
         Log("dropped a voice message from slot %d", pThis->m_nClientSlot.Get());
     }
 
-    // Answered true, so the engine doesn't count the client as broken; the
-    // message just never reaches the voice system.
+    // True, so the engine doesn't count the client as broken.
     return { KHook::Action::Supersede, true };
 }
 
 bool CVoiceFloodFix::ShouldDrop(CServerSideClientBase* pClient, const CCLCMsg_VoiceData& msg)
 {
-    // Bots and clients still connecting are left to the engine.
     if (!pClient || pClient->IsFakeClient() || pClient->m_nSignonState != SIGNONSTATE_FULL)
         return false;
 
@@ -122,7 +112,6 @@ bool CVoiceFloodFix::ShouldDrop(CServerSideClientBase* pClient, const CCLCMsg_Vo
     if (nSlot < 0 || nSlot >= ABSOLUTE_PLAYER_LIMIT)
         return true;
 
-    // Malformed: no audio, no sender, or a sender that isn't this client.
     if (!msg.has_audio() || !msg.has_xuid())
         return true;
     if (msg.xuid() == 0 || msg.xuid() != pClient->m_SteamID.ConvertToUint64())
@@ -136,7 +125,6 @@ bool CVoiceFloodFix::ShouldDrop(CServerSideClientBase* pClient, const CCLCMsg_Vo
     const uint32_t nPackets = audio.num_packets();
     const size_t nVoiceBytes = audio.voice_data().size();
 
-    // Packets announced with no data to go with them.
     if ((nOffsets != 0 || nPackets != 0) && nVoiceBytes == 0)
         return true;
 
@@ -152,8 +140,6 @@ bool CVoiceFloodFix::ShouldDrop(CServerSideClientBase* pClient, const CCLCMsg_Vo
     if (cost > kMaxMessageBytes)
         return true;
 
-    // Forget what fell out of the window, then take this message only if it
-    // still fits.
     Budget& budget = m_Budgets[nSlot];
     const Clock::time_point now = Clock::now();
     while (!budget.recent.empty() && now - budget.recent.front().time >= kBudgetWindow)

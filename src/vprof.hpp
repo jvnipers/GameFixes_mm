@@ -23,23 +23,11 @@
  * Project: GameFixes_mm
  */
 
-// What the plugin costs, as seen by the engine's profiler (vprof_on, then
-// vprof_generate_report / vprof_generate_report_budget).
 #pragma once
 
 #include "tier0/vprof.h"
 
-// Budget group every scope of the plugin is filed under: one "GameFixes" line
-// in the budget report, next to the game's own groups.
 #define GF_VPROF_BUDGETGROUP "GameFixes"
 
-// Scope covering the rest of the enclosing block; goes first in a hook handler
-// or a timer callback. The name is the node in the report, written as
-// "GameFixes::<fix>::<hooked function>[Post]" and kept to 52 characters: the
-// report cuts the Scope column there, and a cut name would merge a Pre with
-// its Post. A Pre and a Post handler are two scopes: the game's original call
-// between them is not counted.
-// VPROF_BUDGET and not VPROF: that one is detail level 1, which the SDK's
-// VPROF_LEVEL 0 compiles out. While vprof is off, or off the main thread,
-// tier0 returns right at the top of the enter call.
+// The report cuts names at 52 characters. VPROF_BUDGET, since VPROF is level 1, which VPROF_LEVEL 0 compiles out.
 #define GF_VPROF(name) VPROF_BUDGET(name, GF_VPROF_BUDGETGROUP)

@@ -1,6 +1,5 @@
 name: Build
 
-# Every push and pull request builds; pushing a tag also releases it.
 on:
   push:
     branches: ["*"]

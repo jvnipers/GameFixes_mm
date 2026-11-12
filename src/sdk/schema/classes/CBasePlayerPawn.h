@@ -43,4 +43,4 @@ public:
     CBasePlayerController* GetController() { return static_cast<CBasePlayerController*>(GameEntitySystem()->GetEntityInstance(m_hController())); }
 };
 
-#endif // _INCLUDE_CBASEPLAYERPAWN_H
+#endif

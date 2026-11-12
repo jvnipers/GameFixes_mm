@@ -29,11 +29,7 @@
 #include "utils.hpp"
 #include "vprof.hpp"
 
-#include <dynlibutils/module.hpp>
-
 #include <cstdio>
-
-using namespace DynLibUtils;
 
 CDemoRecordFix::CDemoRecordFix() :
     KHOOK_NEW(m_hDisconnect, &CServerSideClientBase::Disconnect, this, &CDemoRecordFix::CServerSideClient_Disconnect, nullptr)
@@ -44,17 +40,17 @@ bool CDemoRecordFix::Load(const FixModules& modules, char* error, size_t maxlen)
 {
     m_tvEnable = std::make_unique<CConVarRef<bool>>("tv_enable");
 
-    CMemory pVTable = modules.engine.GetVirtualTableByName("CServerSideClient");
+    void* pVTable = sig::FindVirtualTable(modules.engine, "CServerSideClient");
     if (!pVTable)
     {
         std::snprintf(error, maxlen, "CServerSideClient vtable not found");
         return false;
     }
 
-    m_VTable.m_pVTFs = pVTable.RCast<void**>();
+    m_VTable.m_pVTFs = static_cast<void**>(pVTable);
     m_hDisconnect->AddGlobal(AsHookTarget<CServerSideClientBase>(m_VTable));
 
-    Log("hooked CServerSideClient::Disconnect on vtable %p, tv_enable is %s", pVTable.GetPtr(), IsTvEnabled() ? "on" : "off");
+    Log("hooked CServerSideClient::Disconnect on vtable %p, tv_enable is %s", pVTable, IsTvEnabled() ? "on" : "off");
     return true;
 }
 
@@ -79,7 +75,7 @@ void CDemoRecordFix::OnStartupServer(const GameSessionConfiguration_t& config, c
     if (!IsTvEnabled())
         return;
 
-    // The engine reads max_clients after this Pre hook, so the GOTV slot comes on top of the configured player count instead of eating one.
+    // The engine reads max_clients after this Pre hook, so GOTV gets a slot of its own.
     Log("GOTV is enabled, expanding the session's maxplayers (%u -> %u)", config.max_clients(), config.max_clients() + 1);
     const_cast<GameSessionConfiguration_t&>(config).set_max_clients(config.max_clients() + 1);
 }

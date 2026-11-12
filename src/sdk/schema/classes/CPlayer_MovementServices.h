@@ -35,4 +35,4 @@ class CPlayer_MovementServices : public CPlayerPawnComponent
 {
 };
 
-#endif // _INCLUDE_CPLAYER_MOVEMENTSERVICES_H
+#endif

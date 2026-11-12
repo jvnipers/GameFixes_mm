@@ -39,4 +39,4 @@ public:
     SCHEMA_FIELD(VectorWS, CBeam, m_vecEndPos);
 };
 
-#endif // _INCLUDE_CBEAM_H
+#endif

@@ -27,7 +27,6 @@
 
 #include "utils.hpp"
 
-#include <dynlibutils/module.hpp>
 #include <entity2/entityclass.h>
 #include <entity2/entitysystem.h>
 #include <gameentitysystem.h>
@@ -49,8 +48,7 @@ static SchemaClassInfoData_t* FindServerClass(const char* pszClassName)
     return pType ? pType->FindDeclaredClass(pszClassName).Get() : nullptr;
 }
 
-// Looks in the class, then up its base classes (single inheritance offsets stay
-// valid for the derived class). ppDeclaring receives the class that declares it.
+// Walks up the base classes; single inheritance keeps the offsets valid.
 static SchemaClassFieldData_t* FindField(SchemaClassInfoData_t* pClassInfo, const char* pszFieldName,
                                          SchemaClassInfoData_t** ppDeclaring = nullptr)
 {
@@ -70,8 +68,6 @@ static SchemaClassFieldData_t* FindField(SchemaClassInfoData_t* pClassInfo, cons
     return nullptr;
 }
 
-// The serializer database knows which fields the engine actually replicates.
-// Any entity class reaches it (some schema classes have no entity of their own).
 // Null until the entity system exists.
 static CNetworkSerializerCodeGenDatabase* GetSerializerDatabase()
 {
@@ -129,7 +125,6 @@ schema::NetworkInfo_t schema::GetNetworkInfo(const char* pszClassName, const cha
     if (info.offset < 0)
         return info;
 
-    // Asked on the class that declares the field, which may be a base class.
     SchemaClassInfoData_t* pDeclaring = nullptr;
     FindField(FindServerClass(pszClassName), pszFieldName, &pDeclaring);
 
@@ -148,39 +143,27 @@ void schema::EntityNetworkStateChanged(CEntityInstance* pEntity, int32_t nOffset
 
 void schema::ChainNetworkStateChanged(void* pNetworkVarChainer, int32_t nOffset)
 {
-    // s2sdk's chainer passes it on to its entity with its own path index, and drops it
-    // while the entity is still being constructed
+    // s2sdk's chainer passes it on with its own path index, and drops it mid-construction.
     NetworkStateChangedData data(static_cast<uint32>(nOffset));
     static_cast<CNetworkVarChainer*>(pNetworkVarChainer)->NetworkStateChanged(data);
 }
 
-// Whether p points into the .text section of the module pModuleAddress lives in.
-// The range is read once; the CModule is temporary, as it holds a copy of the
-// whole section read from disk.
 static bool IsInModuleText(const void* p, const void* pModuleAddress)
 {
     static const auto s_text = [pModuleAddress] {
-        DynLibUtils::CModule module(DynLibUtils::CMemory(const_cast<void*>(pModuleAddress)));
-        const DynLibUtils::Section_t* pText = module.GetSectionByName(".text");
-        return pText ? std::pair(pText->GetAddr(), pText->GetAddr() + static_cast<std::ptrdiff_t>(pText->m_nSectionSize))
-                     : std::pair<std::ptrdiff_t, std::ptrdiff_t>(0, 0);
+        void* base = nullptr;
+        size_t size = 0;
+        sig::GetModuleSection(pModuleAddress, ".text", base, size);
+        return std::pair(static_cast<const uint8_t*>(base), static_cast<const uint8_t*>(base) + size);
     }();
 
-    const auto address = reinterpret_cast<std::ptrdiff_t>(p);
-    return address >= s_text.first && address < s_text.second;
+    return p >= s_text.first && p < s_text.second;
 }
 
-// The NetworkVar wrapper's NetworkStateChanged starts by checking
-// NetworkStateChangedData::m_nPathIndex against -1: `cmp dword ptr [reg+0x38], -1`,
-// 83 /7 with a disp8 of 0x38 and an imm8 of -1, whatever register holds the data,
-// within its first 16 bytes. No other slot of these vtables does that (checked on all
-// NetworkVar_ vtables, 2026-09-23 binaries); s2binlib's find_networkvar_vtable_statechanged
-// tests the same.
+// NetworkVar_*::NetworkStateChanged opens with cmp dword ptr [reg+0x38], -1 (m_nPathIndex); no other slot does.
 static bool ChecksPathIndex(const std::uint8_t* pCode)
 {
-    // 16 bytes: the hit is at byte 0 or 12 (2026-10-23 binaries); a wider window
-    // ran past a tiny function's ret / jmp into the next one (CHitboxComponent,
-    // the CPlayer_*Services thunk) and matched there.
+    // A wider window ran past tiny functions into the next one.
     for (std::size_t i = 0; i + 4 <= 16; ++i)
     {
         const std::uint8_t modrm = pCode[i + 1];
@@ -194,8 +177,7 @@ static bool ChecksPathIndex(const std::uint8_t* pCode)
 
 static int FindNetworkStateChangedIndex(void** pVtable)
 {
-    // The vtable ends where its slots stop pointing into code (Linux: the next
-    // vtable's offset-to-top, Windows: its RTTI locator).
+    // The vtable ends where its slots stop pointing into code.
     for (int i = 0; i < 256 && IsInModuleText(pVtable[i], pVtable); ++i)
     {
         if (ChecksPathIndex(static_cast<const std::uint8_t*>(pVtable[i])))
@@ -215,7 +197,7 @@ void schema::EmbeddedNetworkStateChanged(void* pObject, int32_t nOffset)
         it = s_indices.emplace(pVtable, FindNetworkStateChangedIndex(pVtable)).first;
 
     if (it->second < 0)
-        return; // not embedded in a NetworkVar, nothing to replicate
+        return;
 
     using NetworkStateChangedFn = void (*)(void*, NetworkStateChangedData*);
 

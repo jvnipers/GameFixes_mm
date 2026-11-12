@@ -40,4 +40,4 @@ struct VPhysicsCollisionAttribute_t
     SCHEMA_FIELD(uint16, VPhysicsCollisionAttribute_t, m_nHierarchyId);
 };
 
-#endif // _INCLUDE_VPHYSICSCOLLISIONATTRIBUTE_T_H
+#endif

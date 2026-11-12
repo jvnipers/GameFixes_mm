@@ -63,4 +63,4 @@ public:
     const char* GetPlayerName() { return m_iszPlayerName(); }
 };
 
-#endif // _INCLUDE_CBASEPLAYERCONTROLLER_H
+#endif

@@ -23,9 +23,6 @@
  * Project: GameFixes_mm
  */
 
-// Turning sv_cheats off leaves anyone who was in noclip flying around with
-// it. Watches the cvar through ICvar's global change callback and puts every
-// such pawn back to MOVETYPE_WALK the moment it flips to 0.
 #pragma once
 
 #include "fix.h"
@@ -41,8 +38,7 @@ public:
     void Unload() override;
 
 private:
-    // ICvar hands out one plain function pointer per callback, so the one
-    // fix instance is reached through s_pInstance.
+    // ICvar's callback is a plain function pointer, hence s_pInstance.
     static void OnConVarChanged(ConVarRefAbstract* pConVar, CSplitScreenSlot nSlot, const char* pszNewValue, const char* pszOldValue, ConVarUserInfoSet_t* pUserInfo);
     void OnSvCheatsDisabled();
 

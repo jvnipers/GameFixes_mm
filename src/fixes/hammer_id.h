@@ -23,13 +23,9 @@
  * Project: GameFixes_mm
  */
 
-// SetSchemaHammerUniqueId only writes m_sUniqueHammerID behind a jnz, so most
-// entities never get one. The jnz is patched to a jmp and put back on unload.
 #pragma once
 
 #include "fix.h"
-
-#include <dynlibutils/memaddr.hpp>
 
 #include <cstdint>
 
@@ -42,7 +38,6 @@ public:
     void Unload() override;
 
 private:
-    // The patched byte (the jnz opcode) and what it was before.
-    DynLibUtils::CMemory m_pJnz;
+    void* m_pJnz = nullptr;
     uint8_t m_uOriginalByte = 0;
 };

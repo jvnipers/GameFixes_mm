@@ -39,4 +39,4 @@ public:
     SCHEMA_FIELD(CCSGameRules*, CCSGameRulesProxy, m_pGameRules);
 };
 
-#endif // _INCLUDE_CCSGAMERULESPROXY_H
+#endif

@@ -31,6 +31,7 @@ binary.sources += [
   'src/fixes/team_limit.cpp',
   'src/fixes/voice_flood.cpp',
   'src/sdk/schemasystem_helper.cpp',
+  'src/sdk/sigscan.cpp',
   os.path.join(sdk['path'], 'public', 'tier0', 'memoverride.cpp'),
   os.path.join(sdk['path'], 'tier0_perproject', 'keyvalues3.cpp'),
   os.path.join(sdk['path'], 'tier0_perproject', 'convar.cpp'),
@@ -44,7 +45,6 @@ cxx.cxxincludes += [
   os.path.join(mms_root, 'third_party', 'khook', 'include'),
 ]
 
-# The version the plugin reports: the release tag and the commit.
 cxx.defines += [
   'META_IS_SOURCE2',
   'GITHUB_SHA="{}"'.format(Git('rev-parse', '--short', 'HEAD') or 'Local'),
@@ -55,17 +55,11 @@ cxx.defines += ['SE_{}={}'.format(other['define'], other['code']) for other in S
 SdkHelpers.configureCxx(builder, binary, sdk)
 
 if cxx.target.platform == 'linux':
-  # Export only CreateInterface
   cxx.linkflags += ['-Wl,--version-script=' + os.path.join(builder.sourcePath, 'ExportMap')]
-
-cxx.linkflags += [dynlibutils[cxx.target.arch]]
 
 cxx.cxxincludes += [
   os.path.join(builder.sourcePath, 'public'),
   os.path.join(builder.sourcePath, 'src'),
-  os.path.join(builder.sourcePath, 'vendor'),
-  os.path.join(builder.sourcePath, 'vendor', 'dynlibutils', 'include'),
-  os.path.join(builder.sourcePath, 'vendor', 'dynlibutils', 'include', 'dynlibutils'),
 ]
 
 protos = [

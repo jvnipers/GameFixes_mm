@@ -56,7 +56,7 @@ bool CServerListPlayersFix::Load(const FixModules& modules, char* error, size_t 
     m_hSteamAPIActivated->Add(g_pSource2Server);
     m_hSteamAPIDeactivated->Add(g_pSource2Server);
 
-    // Loaded after the API already came up (late load): there won't be another activation, so try it right away.
+    // Late load: the API is already up and won't activate again.
     m_bSteamAPIReady = SteamGameServer() != nullptr;
 
     m_pUpdateTimer = scheduler::AddTimer(m_flUpdateInterval, [this]() { UpdatePlayers(); }, TIMER_FLAG_REPEAT);

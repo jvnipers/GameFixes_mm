@@ -29,10 +29,7 @@
 #pragma once
 #endif
 
-// The server's CNavPhysicsInterface, reached through its vtable by RTTI name.
-// Same declaration order as cs2kz-metamod and source2toolkit use; nothing here
-// is instantiated, the vtable pointer is the whole "object".
-
+// Same declaration order as cs2kz-metamod; only its vtable pointer is ever used.
 
 #include <gametrace.h>
 #include <ray.h>
@@ -53,4 +50,4 @@ public:
 	virtual void Unk(void*) = 0;
 };
 
-#endif // NAVPHYSICSINTERFACE_H
+#endif

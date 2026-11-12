@@ -25,12 +25,9 @@
 
 #pragma once
 
-// module.hpp first: vthook.hpp uses DYNLIB_FORCE_INLINE, which only module.hpp
-// defines, and does not include it itself.
-#include <dynlibutils/memaddr.hpp>
-#include <dynlibutils/module.hpp>
-#include <dynlibutils/virtual.hpp>
-#include <dynlibutils/vthook.hpp>
+#include "sdk/sigscan.h"
+
+#include <khook/memory.hpp>
 
 #include <cstddef>
 #include <cstring>
@@ -42,43 +39,40 @@
 #define WIN_LINUX(win, linux) linux
 #endif
 
-// Overwrites len bytes of code at addr.
-inline void WriteCode(DynLibUtils::CMemory addr, const void* pBytes, std::size_t len)
+inline void* FindPattern(const void* knownAddress, const char* pattern)
+{
+    void* base = nullptr;
+    size_t size = 0;
+    return sig::GetModuleSection(knownAddress, ".text", base, size) ? sig::FindSignature(base, size, pattern) : nullptr;
+}
+
+inline void WriteCode(void* addr, const void* pBytes, std::size_t len)
 {
 #ifdef _WIN32
-    // VirtualProtect hands the previous flags back, so DynLibUtils' RAII
-    // helper restores the page exactly as it was.
-    DynLibUtils::VirtualUnprotector unprotect(addr.GetPtr(), len);
-    std::memcpy(addr.GetPtr(), pBytes, len);
+    // VirtualProtect hands the previous flags back, so the page is restored exactly as it was.
+    DWORD oldProtect;
+    VirtualProtect(addr, len, PAGE_EXECUTE_READWRITE, &oldProtect);
+    std::memcpy(addr, pBytes, len);
+    VirtualProtect(addr, len, oldProtect, &oldProtect);
 #else
-    // Linux has no mprotect() query, and VirtualUnprotector assumes the page
-    // was PROT_READ -- fine for a vtable, but it would strip the execute bit
-    // off .text. Code goes through its own RWX -> RX window instead.
-    const auto pageSize = static_cast<std::uintptr_t>(sysconf(_SC_PAGESIZE));
-    const std::uintptr_t pageStart = addr.GetAddr() & ~(pageSize - 1);
-    const std::uintptr_t pageEnd = (addr.GetAddr() + len + pageSize - 1) & ~(pageSize - 1);
-    void* pPage = reinterpret_cast<void*>(pageStart);
-
-    mprotect(pPage, pageEnd - pageStart, PROT_READ | PROT_WRITE | PROT_EXEC);
-    std::memcpy(addr.GetPtr(), pBytes, len);
-    mprotect(pPage, pageEnd - pageStart, PROT_READ | PROT_EXEC);
+    // Linux has no mprotect() query, so code goes through an RWX -> RX window.
+    KHook::Memory::SetAccess(addr, len, KHook::Memory::READ | KHook::Memory::WRITE | KHook::Memory::EXECUTE);
+    std::memcpy(addr, pBytes, len);
+    KHook::Memory::SetAccess(addr, len, KHook::Memory::READ | KHook::Memory::EXECUTE);
 #endif
 }
 
-// KHook's Virtual::AddGlobal / RemoveGlobal want an object to read the vtable
-// off of, and only ever look at its first pointer. DynLibUtils::VirtualTable
-// is exactly that -- one pointer, the vtable -- so it doubles as the stand-in
-// when there is no real instance to hand over (engine classes resolved by
-// RTTI name): the hook then covers every object sharing that vtable.
+// KHook's AddGlobal / RemoveGlobal only read an object's first pointer: this stands in for one, hooking every object with that vtable.
+struct VirtualTable
+{
+    void** m_pVTFs = nullptr;
+};
+
 template<typename T>
-inline T* AsHookTarget(DynLibUtils::VirtualTable& vtable)
+inline T* AsHookTarget(VirtualTable& vtable)
 {
     return reinterpret_cast<T*>(&vtable);
 }
 
-// Mem-initializer for a hook held through a plain pointer: the hook's type is
-// already spelled out on the member's declaration, so it is taken from there
-// instead of being repeated -- or deduced, which MSVC fails at for KHook's
-// manual-index and some member-function-pointer constructors.
-//   CFoo::CFoo() : KHOOK_NEW(m_hThink, 52u, this, &CFoo::Pre, &CFoo::Post) {}
+// Takes the hook's type from the member's declaration; MSVC fails to deduce some KHook constructors.
 #define KHOOK_NEW(member, ...) member(new std::remove_pointer_t<decltype(member)>(__VA_ARGS__))

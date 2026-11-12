@@ -29,12 +29,8 @@
 #include "sdk/schema/classes/CCSPlayer_MovementServices.h"
 #include "vprof.hpp"
 
-#include <dynlibutils/module.hpp>
-
 #include <cstdio>
 #include <cstring>
-
-using namespace DynLibUtils;
 
 CWaterJumpFix::CWaterJumpFix() :
     KHOOK_NEW(m_hWaterMove, this, &CWaterJumpFix::CCSPlayer_MovementServices_WaterMove, nullptr),
@@ -44,28 +40,26 @@ CWaterJumpFix::CWaterJumpFix() :
 
 bool CWaterJumpFix::Load(const FixModules& modules, char* error, size_t maxlen)
 {
-    // void CCSPlayer_MovementServices::WaterMove(CMoveData* mv)
-    CMemory pWaterMove = modules.server.FindPattern(ParseStringPattern(WIN_LINUX(
+    void* pWaterMove = FindPattern(modules.server, WIN_LINUX(
         "48 8B C4 48 89 58 08 48 89 70 10 48 89 78 18 4C 89 60 20 55 41 56 41 57 48 8D A8 68 FE FF FF",
-        "48 B8 ? ? ? ? ? ? ? ? 55 66 0F EF C0 48 89 E5 41 57 41 56 41 55 4C 8D AD ? ? ? ? 41 54 49 89 FC 4C 89 EF 53 48 89 F3 48 81 EC ? ? ? ? 48 89 85 ? ? ? ? 48 8B 05 ? ? ? ? 0F 29 85 ? ? ? ? 48 C7 85 ? ? ? ? ? ? ? ? 48 C7 45 ? ? ? ? ? 48 89 85 ? ? ? ? 48 B8 ? ? ? ? ? ? ? ? 48 89 45 ? E8 ? ? ? ? 48 8D 8D")));
+        "48 B8 ? ? ? ? ? ? ? ? 55 66 0F EF C0 48 89 E5 41 57 41 56 41 55 4C 8D AD ? ? ? ? 41 54 49 89 FC 4C 89 EF 53 48 89 F3 48 81 EC ? ? ? ? 48 89 85 ? ? ? ? 48 8B 05 ? ? ? ? 0F 29 85 ? ? ? ? 48 C7 85 ? ? ? ? ? ? ? ? 48 C7 45 ? ? ? ? ? 48 89 85 ? ? ? ? 48 B8 ? ? ? ? ? ? ? ? 48 89 45 ? E8 ? ? ? ? 48 8D 8D"));
     if (!pWaterMove)
     {
         std::snprintf(error, maxlen, "CCSPlayer_MovementServices::WaterMove not found");
         return false;
     }
 
-    // void CCSPlayer_MovementServices::CategorizePosition(CMoveData* mv, bool bStayOnGround)
-    CMemory pCategorizePosition = modules.server.FindPattern(ParseStringPattern(WIN_LINUX("40 55 56 57 41 54 41 55 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B F9", "48 B8 ? ? ? ? ? ? ? ? 55 66 0F EF C0 48 89 E5 41 57 41 56 41 55 41 89 D5")));
+    void* pCategorizePosition = FindPattern(modules.server, WIN_LINUX("40 55 56 57 41 54 41 55 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B F9", "48 B8 ? ? ? ? ? ? ? ? 55 66 0F EF C0 48 89 E5 41 57 41 56 41 55 41 89 D5"));
     if (!pCategorizePosition)
     {
         std::snprintf(error, maxlen, "CCSPlayer_MovementServices::CategorizePosition not found");
         return false;
     }
 
-    m_hWaterMove->Configure(pWaterMove.GetPtr());
-    m_hCategorizePosition->Configure(pCategorizePosition.GetPtr());
+    m_hWaterMove->Configure(pWaterMove);
+    m_hCategorizePosition->Configure(pCategorizePosition);
 
-    Log("hooked WaterMove (%p) and CategorizePosition (%p)", pWaterMove.GetPtr(), pCategorizePosition.GetPtr());
+    Log("hooked WaterMove (%p) and CategorizePosition (%p)", pWaterMove, pCategorizePosition);
     return true;
 }
 

@@ -76,7 +76,7 @@ void CSlowAnimationFix::OnStartupServer(const GameSessionConfiguration_t& config
     const float flRemaining = m_flPendingTimelimit;
     m_flPendingTimelimit = -1.0f;
 
-    // The map's own cfg runs after StartupServer and would overwrite the value; one frame later is past that.
+    // The map's own cfg runs after StartupServer and would overwrite it.
     scheduler::NextFrame([this, flRemaining]()
     {
         if (!m_timelimit || !m_timelimit->IsValidRef())

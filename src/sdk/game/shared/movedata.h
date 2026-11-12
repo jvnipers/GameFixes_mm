@@ -24,12 +24,6 @@
  */
 
 //====== Copyright © 1996-2005, Valve Corporation, All rights reserved. =======
-//
-// Purpose: the movement pass's working set, as CCSPlayer_MovementServices
-//          hands it to TryPlayerMove / CategorizePosition. Layout only -- the
-//          rampbug fix reads and writes m_vecVelocity and m_vecAbsOrigin.
-//
-//=============================================================================
 
 #ifndef MOVEDATA_H
 #define MOVEDATA_H
@@ -101,4 +95,4 @@ public:
     float m_flMaxSpeed;
 };
 
-#endif // MOVEDATA_H
+#endif

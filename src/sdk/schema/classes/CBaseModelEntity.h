@@ -35,4 +35,4 @@ class CBaseModelEntity : public CBaseEntity
 {
 };
 
-#endif // _INCLUDE_CBASEMODELENTITY_H
+#endif

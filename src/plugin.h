@@ -27,7 +27,6 @@
 
 #include "utils.hpp"
 
-#include <dynlibutils/virtual.hpp>
 #include <engine2/inetworkserverservice.h>
 #include <engine2/isource2server.h>
 #include <engine2/ivengineserver2.h>
@@ -50,7 +49,7 @@ public:
 
     void* OnMetamodQuery(const char* iface, int* ret) override;
 
-public: // IGameFixes
+public:
     bool SteamBanAllowAccount(uint64_t steamId64) override;
     bool SteamBanDisallowAccount(uint64_t steamId64) override;
 
@@ -66,26 +65,24 @@ public: // IGameFixes
     const char* GetDate() override;
     const char* GetLogTag() override;
 
-public: // Hooks
+public:
     KHook::Return<void> CSource2Server_GameFrame(ISource2Server* pThis, bool simulating, bool bFirstTick, bool bLastTick);
     KHook::Return<void> INetworkServerService_StartupServer(INetworkServerService* pThis, const GameSessionConfiguration_t& config, ISource2WorldSession* pSession, const char* pszMapName);
     KHook::Return<int> CGameEventManager_LoadEventsFromFile(IGameEventManager2* pThis, const char* pszFilename, bool bSearchAll);
 
-    // KHook hooks only come down in their destructor, so they're owned through plain pointers: new in the constructor, delete in Unload().
     KHook::Virtual<ISource2Server, void, bool, bool, bool>* m_hGameFrame = nullptr;
     KHook::Virtual<INetworkServerService, void, const GameSessionConfiguration_t&, ISource2WorldSession*, const char*>* m_hStartupServer = nullptr;
     KHook::Virtual<IGameEventManager2, int, const char*, bool>* m_hLoadEventsFromFile = nullptr;
 
 private:
     std::vector<std::unique_ptr<CFix>> CreateFixes();
-    // A loaded fix by its name, or null
     CFix* FindFix(const char* pszName) const;
     bool LoadFixes(const FixModules& modules, char* error, size_t maxlen);
 
     std::vector<std::unique_ptr<CFix>> m_fixes;
 
-    // IGameEventManager2 has no interface to fetch: the CGameEventManager vtable (from libserver) is hooked and the first LoadEventsFromFile hands the instance over -- see CGameEventManager_LoadEventsFromFile.
-    DynLibUtils::VirtualTable m_GameEventManagerVTable;
+    // No interface to fetch: the first LoadEventsFromFile hands the instance over.
+    VirtualTable m_GameEventManagerVTable;
     IGameEventManager2* m_pGameEventManager = nullptr;
 };
 

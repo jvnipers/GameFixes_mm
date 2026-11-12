@@ -39,4 +39,4 @@ public:
     SCHEMA_FIELD(uint8, CCollisionProperty, m_CollisionGroup);
 };
 
-#endif // _INCLUDE_CCOLLISIONPROPERTY_H
+#endif

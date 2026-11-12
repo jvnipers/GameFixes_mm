@@ -23,10 +23,6 @@
  * Project: GameFixes_mm
  */
 
-// CBaseFilter::InputTestActivator / CEntityIdentity::AcceptInput dereferences the input's activator without
-// checking it, so a TestActivator input fired with no activator (a map's
-// output wired straight to a filter, for one) takes the server down. Calls
-// without an activator are dropped before the game sees them.
 #pragma once
 
 #include "fix.h"
@@ -44,7 +40,7 @@ public:
     bool Load(const FixModules& modules, char* error, size_t maxlen) override;
     void Unload() override;
 
-public: // Hooks
+public:
     KHook::Return<bool> CEntityIdentity_AcceptInput(CEntityIdentity* pThis, CUtlSymbolLarge* pInputName, CEntityInstance* pActivator, CEntityInstance* pCaller, variant_t* pValue, void* a6, void* a7);
 
     KHook::Member<CEntityIdentity, bool, CUtlSymbolLarge*, CEntityInstance*, CEntityInstance*, variant_t*, void*, void*>* m_hAcceptInput = nullptr;

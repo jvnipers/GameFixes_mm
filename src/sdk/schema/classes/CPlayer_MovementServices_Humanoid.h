@@ -35,4 +35,4 @@ class CPlayer_MovementServices_Humanoid : public CPlayer_MovementServices
 {
 };
 
-#endif // _INCLUDE_CPLAYER_MOVEMENTSERVICES_HUMANOID_H
+#endif

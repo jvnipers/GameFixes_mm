@@ -40,4 +40,4 @@ public:
     SCHEMA_FIELD(Vector, CGameSceneNode, m_vecAbsOrigin);
 };
 
-#endif // _INCLUDE_CGAMESCENENODE_H
+#endif

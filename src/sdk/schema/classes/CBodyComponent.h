@@ -38,4 +38,4 @@ public:
     SCHEMA_FIELD(CGameSceneNode*, CBodyComponent, m_pSceneNode);
 };
 
-#endif // _INCLUDE_CBODYCOMPONENT_H
+#endif

@@ -24,10 +24,6 @@
  */
 
 //====== Copyright © 1996-2005, Valve Corporation, All rights reserved. =======
-//
-// Purpose: Typed wrappers around the protobuf network messages
-//
-//=============================================================================
 
 #ifndef SDK_NETMESSAGES_H
 #define SDK_NETMESSAGES_H
@@ -45,12 +41,7 @@
 #undef min
 #undef max
 
-/* =========================
-Signon groups
-========================= */
-
-// hl2sdk-cs2 does not declare these; the values are the engine's own and are
-// what every message below is tagged with. Index 12 is a gap in the engine.
+// Index 12 is a gap in the engine.
 enum SignonGroup_t : int32_t
 {
     SG_INVALID      = -1,
@@ -84,17 +75,7 @@ inline constexpr const char* k_pszNetGroupNames[ SG_TOTAL ] =
     "Game Engine", "Hltv Replay", "Decals"
 };
 
-/* =========================
-Typed message wrappers
-========================= */
-
-// hl2sdk-cs2's CNetMessagePB is a one-parameter stub, and a class template
-// cannot be redeclared with a different parameter list, so the message id,
-// signon group and buffer type ride along here instead.
-//
-// No data members and no virtuals of its own, so the layout stays
-// CNetMessagePB<T>'s. These wrappers are abstract, like the stub they derive
-// from -- fine everywhere they are only cast onto engine memory.
+// s2sdk's CNetMessagePB takes one template parameter. No members or virtuals here, so the layout stays CNetMessagePB<T>'s.
 template< int32_t ID, typename PROTO_TYPE, SignonGroup_t SIGNON = SG_GENERIC,
           NetChannelBufType_t BUF_TYPE = BUF_RELIABLE, bool IS_FOR_SERVER = false >
 class CNetMessagePBTyped : public CNetMessagePB< PROTO_TYPE >
@@ -118,19 +99,11 @@ public:
 template< int32_t ID, typename PROTO_TYPE, NetChannelBufType_t BUF_TYPE = BUF_RELIABLE >
 class CUserMessagePB : public CNetMessagePBTyped< ID, PROTO_TYPE, SG_USERMSG, BUF_TYPE > {};
 
-/* =========================
-System messages
-========================= */
-
 class NetMessageSplitscreenUserChanged_t :   public CNetMessagePBTyped< -1, NetMessageSplitscreenUserChanged, SG_SYSTEM > {};
 class NetMessagePacketStart_t :              public CNetMessagePBTyped< -1, NetMessagePacketStart, SG_SYSTEM > {};
 class NetMessagePacketEnd_t :                public CNetMessagePBTyped< -1, NetMessagePacketEnd, SG_SYSTEM > {};
 class NetMessageConnectionClosed_t :         public CNetMessagePBTyped< -1, NetMessageConnectionClosed, SG_SYSTEM > {};
 class NetMessageConnectionCrashed_t :        public CNetMessagePBTyped< -1, NetMessageConnectionCrashed, SG_SYSTEM > {};
-
-/* =========================
-Engine (net_*)
-========================= */
 
 class CNETMsg_Tick_t :                       public CNetMessagePBTyped< net_Tick, CNETMsg_Tick, SG_ENGINE, BUF_UNRELIABLE > {};
 class CNETMsg_StringCmd_t :                  public CNetMessagePBTyped< net_StringCmd, CNETMsg_StringCmd, SG_STRINGCMD > {};
@@ -142,10 +115,6 @@ class CNETMsg_SpawnGroup_SetCreationTick_t : public CNetMessagePBTyped< net_Spaw
 class CNETMsg_SpawnGroup_Unload_t :          public CNetMessagePBTyped< net_SpawnGroup_Unload, CNETMsg_SpawnGroup_Unload, SG_SPAWNGROUPS > {};
 class CNETMsg_SpawnGroup_LoadCompleted_t :   public CNetMessagePBTyped< net_SpawnGroup_LoadCompleted, CNETMsg_SpawnGroup_LoadCompleted, SG_SPAWNGROUPS > {};
 class CNETMsg_DebugOverlay_t :               public CNetMessagePBTyped< net_DebugOverlay, CNETMsg_DebugOverlay, SG_ENGINE > {};
-
-/* =========================
-Client -> Server (clc_*)
-========================= */
 
 class CCLCMsg_ClientInfo_t :                 public CNetMessagePBTyped< clc_ClientInfo, CCLCMsg_ClientInfo, SG_SIGNON > {};
 class CCLCMsg_Move_t :                       public CNetMessagePBTyped< clc_Move, CCLCMsg_Move, SG_MOVE, BUF_UNRELIABLE > {};
@@ -162,10 +131,6 @@ class CCLCMsg_RconServerDetails_t :          public CNetMessagePBTyped< clc_Rcon
 class CCLCMsg_HltvReplay_t :                 public CNetMessagePBTyped< clc_HltvReplay, CCLCMsg_HltvReplay, SG_HLTVREPLAY > {};
 class CCLCMsg_Diagnostic_t :                 public CNetMessagePBTyped< clc_Diagnostic, CCLCMsg_Diagnostic > {};
 
-/* =========================
-Server -> Client (svc_*)
-========================= */
-
 class CSVCMsg_ServerInfo_t :                 public CNetMessagePBTyped< svc_ServerInfo, CSVCMsg_ServerInfo, SG_SIGNON > {};
 class CSVCMsg_FlattenedSerializer_t :        public CNetMessagePBTyped< svc_FlattenedSerializer, CSVCMsg_FlattenedSerializer, SG_SIGNON > {};
 class CSVCMsg_ClassInfo_t :                  public CNetMessagePBTyped< svc_ClassInfo, CSVCMsg_ClassInfo, SG_SIGNON > {};
@@ -181,11 +146,7 @@ class CSVCMsg_ClearAllStringTables_t :       public CNetMessagePBTyped< svc_Clea
 class CSVCMsg_CmdKeyValues_t :               public CNetMessagePBTyped< svc_CmdKeyValues, CSVCMsg_CmdKeyValues, SG_STRINGCMD > {};
 class CSVCMsg_BSPDecal_t :                   public CNetMessagePBTyped< svc_BSPDecal, CSVCMsg_BSPDecal > {};
 class CSVCMsg_SplitScreen_t :                public CNetMessagePBTyped< svc_SplitScreen, CSVCMsg_SplitScreen, SG_SIGNON > {};
-// The one wrapper that cannot stay abstract: CServerSideClientBase embeds it by
-// value, and CNetMessage leaves AsProto/AsProto2/GetNetMessage/CopyConstruct/
-// GetMessageId pure. Filling the slots adds no members and no virtuals of its own, so
-// the layout is unchanged; the bodies are never reached, since this is only
-// ever cast onto engine memory.
+// Not abstract: CServerSideClientBase embeds it by value. The bodies are never reached.
 class CSVCMsg_PacketEntities_t : public CNetMessagePBTyped< svc_PacketEntities, CSVCMsg_PacketEntities, SG_INVALID >
 {
 public:
@@ -210,4 +171,4 @@ class CSVCMsg_Broadcast_Command_t :          public CNetMessagePBTyped< svc_Broa
 class CSVCMsg_HltvFixupOperatorStatus_t :    public CNetMessagePBTyped< svc_HltvFixupOperatorStatus, CSVCMsg_HltvFixupOperatorStatus > {};
 class CSVCMsg_UserCommands_t :               public CNetMessagePBTyped< svc_UserCmds, CSVCMsg_UserCommands, SG_HLTVREPLAY > {};
 
-#endif // SDK_NETMESSAGES_H
+#endif
